@@ -15,6 +15,7 @@ class CVE_2025_67887(CVECheck):
     references = [
         'https://nvd.nist.gov/vuln/detail/CVE-2025-67887',
         'https://karmainsecurity.com/KIS-2025-08',
+        'https://github.com/advisories/GHSA-2636-hvcv-37w8',
     ]
 
     # NOTE: admin path below is a best-guess module entry point and is
@@ -26,8 +27,9 @@ class CVE_2025_67887(CVECheck):
     notes = (
         'Vendor-disputed. Improper archive validation in the Translate module: '
         'an uploaded archive with a PHP file + .htaccess executes on extraction. '
-        'CVSS is reported as 9.8 (NVD/OpenCVE) vs ~6.3 elsewhere. Endpoint path '
-        'is UNVERIFIED.'
+        'CVSS 9.8 (NVD/GHSA, vector PR:N -- scored as unauthenticated) conflicts '
+        'with the advisory text (requires Translate SOURCE/WRITE), hence the '
+        '9.8-vs-~6.3 split. No fixed version published. Endpoint path UNVERIFIED.'
     )
 
     # Affected through platform version 25.100.500 (disputed; needs SOURCE/WRITE).
