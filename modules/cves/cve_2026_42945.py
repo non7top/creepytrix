@@ -32,6 +32,15 @@ from .base import CVECheck, CheckResult
 _LAST_VULNERABLE = (1, 30, 0)
 _VERSION_RE = re.compile(r'nginx/(\d+)\.(\d+)\.(\d+)', re.IGNORECASE)
 
+# Ubuntu per-release fixed package versions (from ubuntu.com/security).
+_UBUNTU_FIXED = {
+    'noble': '1.24.0-2ubuntu7.8',
+    'jammy': '1.18.0-6ubuntu14.11',
+    'focal': '1.18.0-0ubuntu1.7+esm1',
+}
+# bx-nginx (RHEL/VMBitrix) is fixed in this build.
+_BXNGINX_FIXED = (1, 30, 2)
+
 _HOST_CHECK = (
     'Verify on host: Debian/Ubuntu `dpkg-query -W -f=\'${Version}\' nginx-core` '
     'then `dpkg --compare-versions <ver> ge <distro-fixed-ver>` (see '
@@ -97,6 +106,63 @@ class CVE_2026_42945(CVECheck):
                         f'this is not proof. {_HOST_CHECK}'),
             )
         # Version above the vulnerable range -> not affected upstream.
+        return None
+
+
+    def local_check(self, host):
+        """Confirm on-host by resolving the installed package version."""
+        family = host.distro_family()
+
+        # Debian / Ubuntu: compare nginx-core against the release's fixed rev.
+        deb_ver = host.dpkg_version('nginx-core') or host.dpkg_version('nginx')
+        if deb_ver:
+            codename = host.os_codename()
+            fixed = _UBUNTU_FIXED.get(codename)
+            if fixed:
+                ge = host.compare_deb(deb_ver, 'ge', fixed)
+                if ge is True:
+                    return CheckResult(
+                        detected=False, confidence='not_affected', severity='info',
+                        evidence=f'nginx-core {deb_ver} (>= {fixed})',
+                        detail=(f'{self.cve_id}: patched -- installed {deb_ver} '
+                                f'>= {codename} fixed {fixed}.'))
+                if ge is False:
+                    return CheckResult(
+                        detected=True, confidence='confirmed', severity='critical',
+                        evidence=f'nginx-core {deb_ver} (< {fixed})',
+                        detail=(f'{self.cve_id}: VULNERABLE -- installed {deb_ver} '
+                                f'< {codename} fixed {fixed}. Run apt-get update && '
+                                f'apt-get install --only-upgrade nginx-core.'))
+            # Unknown release or dpkg unavailable: report the version, no verdict.
+            return CheckResult(
+                detected=True, confidence='reachable', severity='medium',
+                evidence=f'nginx-core {deb_ver}',
+                detail=(f'{self.cve_id}: nginx {deb_ver} installed but no known '
+                        f'fixed version for release "{codename}" -- check '
+                        f'ubuntu.com/security/CVE-2026-42945.'))
+
+        # RHEL / VMBitrix: bx-nginx must be >= 1.30.2.
+        rpm_ver = host.rpm_version('bx-nginx') or host.rpm_version('nginx')
+        if rpm_ver:
+            m = _VERSION_RE.search('nginx/' + rpm_ver) or re.match(r'(\d+)\.(\d+)\.(\d+)', rpm_ver)
+            if m:
+                version = tuple(int(x) for x in m.groups())
+                vulnerable = version < _BXNGINX_FIXED
+                return CheckResult(
+                    detected=vulnerable,
+                    confidence='confirmed' if vulnerable else 'not_affected',
+                    severity='critical' if vulnerable else 'info',
+                    evidence=f'rpm {rpm_ver}',
+                    detail=(f'{self.cve_id}: {"VULNERABLE" if vulnerable else "patched"} '
+                            f'-- installed {rpm_ver} vs bx-nginx fixed 1.30.2.'))
+            return CheckResult(
+                detected=True, confidence='reachable', severity='medium',
+                evidence=f'rpm {rpm_ver}',
+                detail=f'{self.cve_id}: bx-nginx {rpm_ver} installed; verify >= 1.30.2.')
+
+        # nginx not found via either package manager.
+        if family == 'unknown':
+            return None
         return None
 
 

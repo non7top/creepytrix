@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """CVE-2025-67887 -- 1C-Bitrix Translate module RCE (vendor-disputed)."""
 
-from .base import CVECheck
+from .base import CVECheck, CheckResult
 
 
 class CVE_2025_67887(CVECheck):
@@ -29,6 +29,27 @@ class CVE_2025_67887(CVECheck):
         'CVSS is reported as 9.8 (NVD/OpenCVE) vs ~6.3 elsewhere. Endpoint path '
         'is UNVERIFIED.'
     )
+
+    # Affected through platform version 25.100.500 (disputed; needs SOURCE/WRITE).
+    AFFECTED_MAX = (25, 100, 500)
+
+    def local_check(self, host):
+        if not host.web_root:
+            return None
+        ver = host.bitrix_version(host.web_root)
+        if not ver:
+            return None
+        affected = host.version_tuple(ver) <= self.AFFECTED_MAX
+        if not affected:
+            return CheckResult(
+                detected=False, confidence='not_affected', severity='info',
+                evidence=f'platform {ver}',
+                detail=f'{self.cve_id}: platform {ver} > 25.100.500 (above affected range).')
+        return CheckResult(
+            detected=True, confidence='confirmed', severity='medium',
+            evidence=f'platform {ver}',
+            detail=(f'{self.cve_id}: platform {ver} <= 25.100.500 (affected range). '
+                    f'Vendor-disputed; exploit needs Translate SOURCE/WRITE rights.'))
 
 
 PLUGIN = CVE_2025_67887()

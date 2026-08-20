@@ -14,6 +14,10 @@ and nothing else needs to change.
 - For a richer (still **non-destructive**) proof, override `check(self,
   requester, base_url)` and return a `CheckResult(detected, confidence,
   evidence, detail)` where `confidence` is `'reachable'` or `'confirmed'`.
+- For **local mode** (running on the host), optionally implement
+  `local_check(self, host)` where `host` is a `utils.localhost.LocalHost`.
+  Resolve the exact installed package/module version and return a `CheckResult`
+  with confidence `'confirmed'` (vulnerable) or `'not_affected'` (patched).
 
 ## Rules of the house
 

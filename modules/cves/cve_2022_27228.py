@@ -56,5 +56,24 @@ class CVE_2022_27228(CVECheck):
             detail=detail,
         )
 
+    # Vote module is fixed in 21.0.100.
+    FIXED_MODULE_VERSION = (21, 0, 100)
+
+    def local_check(self, host):
+        if not host.web_root:
+            return None
+        ver = host.bitrix_module_version(host.web_root, 'vote')
+        if not ver:
+            return None
+        vulnerable = host.version_tuple(ver) < self.FIXED_MODULE_VERSION
+        return CheckResult(
+            detected=vulnerable,
+            confidence='confirmed' if vulnerable else 'not_affected',
+            severity='critical' if vulnerable else 'info',
+            evidence=f'vote module {ver}',
+            detail=(f'{self.cve_id}: {"VULNERABLE" if vulnerable else "patched"} '
+                    f'-- vote module {ver} vs fixed 21.0.100.'),
+        )
+
 
 PLUGIN = CVE_2022_27228()

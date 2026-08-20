@@ -73,3 +73,13 @@ class CVECheck:
                 detail=f'{self.cve_id} endpoint reachable (not confirmed exploitable)',
             )
         return None
+
+    def local_check(self, host):
+        """Host-side confirmation for local mode. Default: not implemented.
+
+        ``host`` is a :class:`utils.localhost.LocalHost`. Override to inspect
+        installed package versions / on-disk config and return a
+        :class:`CheckResult` with confidence ``'confirmed'`` (vulnerable) or
+        ``'not_affected'`` (patched), or ``None`` when inconclusive / N/A.
+        """
+        return None
