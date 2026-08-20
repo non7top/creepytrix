@@ -34,4 +34,4 @@ and nothing else needs to change.
 | CVE-2023-1714  | Bitrix24 | auth | Unsafe variable extraction |
 | CVE-2025-67886 | Bitrix24 | auth | Translate module; vendor-disputed; path unverified |
 | CVE-2025-67887 | 1C-Bitrix | auth | Translate module; vendor-disputed; path unverified |
-| CVE-2026-42945 | nginx (bx-nginx) | unauth | "NGINX Rift"; Server-header version inference |
+| CVE-2026-42945 | nginx (bx-nginx) | unauth | "NGINX Rift"; advisory only -- server_tokens/backports make remote version unreliable, verify on host |

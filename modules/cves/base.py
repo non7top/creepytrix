@@ -27,6 +27,7 @@ class CheckResult:
     confidence: str          # 'reachable' | 'confirmed'
     evidence: str = ''
     detail: str = ''
+    severity: Optional[str] = None   # optional per-result override (else derived)
 
 
 class CVECheck:

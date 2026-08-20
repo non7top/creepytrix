@@ -509,7 +509,11 @@ class BitrixRCETester:
             # Reachability is not proof; only "confirmed" plugins keep the
             # plugin's own severity. Reachable-only findings are capped at high
             # to avoid false CRITICAL noise.
-            severity = plugin.severity if outcome.confidence == 'confirmed' else 'high'
+            # Plugin may pin the finding severity (e.g. an inconclusive
+            # advisory). Otherwise: confirmed keeps the plugin severity,
+            # reachable-only is capped at high.
+            severity = getattr(outcome, 'severity', None) or (
+                plugin.severity if outcome.confidence == 'confirmed' else 'high')
             disputed = ' [vendor-disputed]' if plugin.disputed else ''
             finding = RCEFinding(
                 severity=severity,
@@ -522,7 +526,10 @@ class BitrixRCETester:
                 evidence=outcome.evidence,
             )
             result.add_finding(finding)
-            log = self.logger.critical if severity == 'critical' else self.logger.error
+            log = {
+                'critical': self.logger.critical,
+                'high': self.logger.error,
+            }.get(severity, self.logger.warning)
             log(f"!!! {plugin.cve_id} [{outcome.confidence}] at {finding.url}")
 
     def _test_log_poisoning(self, base_url: str, result: RCEResult):
