@@ -166,6 +166,13 @@ class TestNewVectors(unittest.TestCase):
     def setUp(self):
         self.plugins = {p.cve_id: p for p in load_plugins()}
 
+    def test_translate_cves_no_remote_false_positive(self):
+        # Login page contains "translate" -> must NOT produce a remote finding.
+        for cid in ('CVE-2025-67886', 'CVE-2025-67887'):
+            self.assertIsNone(
+                self.plugins[cid].check(_Req(text='...translate module...', status_code=200), 'https://t/'),
+                f'{cid} produced a remote false positive')
+
     def test_cve_2023_1719_reachable_when_endpoints_exist(self):
         r = self.plugins['CVE-2023-1719'].check(_Req(status_code=200), 'https://t/')
         self.assertIsNotNone(r)

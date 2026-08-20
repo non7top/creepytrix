@@ -29,6 +29,13 @@ class CVE_2025_67886(CVECheck):
         'a .htaccess to gain code execution. Endpoint path is UNVERIFIED.'
     )
 
+    def check(self, requester, base_url):
+        # No reliable UNAUTHENTICATED remote signal. /bitrix/admin/translate*.php
+        # redirects to the login page (which contains the word "translate"),
+        # so a substring probe false-positives. These CVEs need SOURCE/WRITE and
+        # are detected authoritatively by version via local_check().
+        return None
+
     # Affected through platform version 25.100.300 (disputed; needs SOURCE/WRITE).
     AFFECTED_MAX = (25, 100, 300)
 
