@@ -21,7 +21,7 @@ def load_plugins() -> List[CVECheck]:
     """Discover and instantiate all CVE plugins, sorted by CVE id."""
     plugins: List[CVECheck] = []
     for _finder, name, _ispkg in pkgutil.iter_modules(__path__):
-        if not name.startswith('cve_'):
+        if not name.startswith(('cve_', 'vuln_')):
             continue
         module = importlib.import_module(f'{__name__}.{name}')
         plugin = getattr(module, 'PLUGIN', None)

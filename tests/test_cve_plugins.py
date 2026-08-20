@@ -15,25 +15,27 @@ from modules.local_scan import BitrixLocalScanner
 from utils.localhost import LocalHost
 
 EXPECTED = [
-    'CVE-2022-27228', 'CVE-2023-1713', 'CVE-2023-1714',
+    'BITRIX-html_editor_action',
+    'CVE-2022-27228', 'CVE-2023-1713', 'CVE-2023-1714', 'CVE-2023-1719',
     'CVE-2025-67886', 'CVE-2025-67887', 'CVE-2026-42945',
 ]
 
 
 class _Resp:
-    def __init__(self, text='', server=None):
+    def __init__(self, text='', server=None, status_code=200):
         self.text = text
+        self.status_code = status_code
         self.headers = {'Server': server} if server is not None else {}
 
 
 class _Req:
-    """Requester stub returning a fixed body/Server for every call."""
-    def __init__(self, text='', server=None):
-        self._t, self._s = text, server
+    """Requester stub returning a fixed body/Server/status for every call."""
+    def __init__(self, text='', server=None, status_code=200):
+        self._t, self._s, self._sc = text, server, status_code
     def get(self, url, **k):
-        return _Resp(self._t, self._s)
+        return _Resp(self._t, self._s, self._sc)
     def post(self, url, **k):
-        return _Resp(self._t, self._s)
+        return _Resp(self._t, self._s, self._sc)
 
 
 class _NullLog:
@@ -158,6 +160,27 @@ class TestBitrixSourceParsing(unittest.TestCase):
         h = LocalHost()
         self.assertLess(h.version_tuple('20.5.400'), h.version_tuple('21.0.100'))
         self.assertLessEqual(h.version_tuple('25.100.500'), h.version_tuple('25.100.500'))
+
+
+class TestNewVectors(unittest.TestCase):
+    def setUp(self):
+        self.plugins = {p.cve_id: p for p in load_plugins()}
+
+    def test_cve_2023_1719_reachable_when_endpoints_exist(self):
+        r = self.plugins['CVE-2023-1719'].check(_Req(status_code=200), 'https://t/')
+        self.assertIsNotNone(r)
+        self.assertEqual(r.confidence, 'reachable')
+
+    def test_cve_2023_1719_none_on_404(self):
+        self.assertIsNone(self.plugins['CVE-2023-1719'].check(_Req(status_code=404), 'https://t/'))
+
+    def test_html_editor_action_reachable(self):
+        r = self.plugins['BITRIX-html_editor_action'].check(_Req(text='bxu', status_code=200), 'https://t/')
+        self.assertIsNotNone(r)
+        self.assertEqual(r.confidence, 'reachable')
+
+    def test_html_editor_action_none_on_404_no_marker(self):
+        self.assertIsNone(self.plugins['BITRIX-html_editor_action'].check(_Req(text='', status_code=404), 'https://t/'))
 
 
 class TestWebRootDetection(unittest.TestCase):
