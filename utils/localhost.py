@@ -128,15 +128,25 @@ class LocalHost:
     _MODULE_VER_RE = re.compile(r'["\']VERSION["\']\s*=>\s*["\']([\d.]+)["\']')
     _SM_VERSION_RE = re.compile(r'SM_VERSION["\']?\s*,\s*["\']([\d.]+)["\']')
 
+    # A document root may be the path itself or nested under one of these.
+    _DOCROOT_SUBDIRS = ('', 'web', 'www', 'public_html', 'httpdocs', 'public')
+
     def find_web_root(self, explicit: Optional[str] = None) -> Optional[str]:
-        """Locate a Bitrix document root (one containing /bitrix/modules/main)."""
+        """Locate a Bitrix document root (one containing bitrix/modules/main).
+
+        Detection is directory-based (not tied to a specific version.php path,
+        which varies between editions/versions). If the given path is a parent,
+        common docroot subdirs (web/, www/, ...) are also checked.
+        """
         candidates = [explicit] if explicit else list(self.WEB_ROOT_CANDIDATES)
         for root in candidates:
             if not root:
                 continue
-            marker = os.path.join(root, 'bitrix', 'modules', 'main', 'install', 'version.php')
-            if os.path.exists(marker):
-                return os.path.abspath(root)
+            root = os.path.abspath(os.path.expanduser(root))
+            for sub in self._DOCROOT_SUBDIRS:
+                base = os.path.join(root, sub) if sub else root
+                if os.path.isdir(os.path.join(base, 'bitrix', 'modules', 'main')):
+                    return base
         return None
 
     def bitrix_module_version(self, web_root: str, module: str) -> Optional[str]:
