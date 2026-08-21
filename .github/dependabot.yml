@@ -1,0 +1,37 @@
+# Dependabot version updates for the ecosystems this repo actually uses:
+#   - pip:            requirements.txt + requirements-dev.txt (repo root)
+#   - github-actions: actions pinned in .github/workflows/*
+#   - docker:         base image in the Dockerfile
+# Security updates/alerts are enabled separately at the repo level.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    groups:
+      python:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
