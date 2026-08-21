@@ -167,8 +167,11 @@ class BitrixLocalScanner:
         except Exception as e:
             self.logger.debug(f"vuln-module registry unavailable: {e}")
             return
+        mod_list = registry.get('modules', [])
+        if mod_list:
+            self.logger.info(f"Checking installed modules against 1C-Bitrix vul_dev registry ({len(mod_list)} rules loaded)")
         covered_by_plugin = {'intec.core'}
-        for mod in registry.get('modules', []):
+        for mod in mod_list:
             code = mod.get('code')
             fixed = mod.get('fixed')
             if not code or not fixed or code in covered_by_plugin:
