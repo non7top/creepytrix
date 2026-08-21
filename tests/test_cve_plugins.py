@@ -15,6 +15,7 @@ from modules.local_scan import BitrixLocalScanner
 from utils.localhost import LocalHost
 
 EXPECTED = [
+    'BDU:2026-05967',
     'BITRIX-html_editor_action',
     'CVE-2022-27228', 'CVE-2023-1713', 'CVE-2023-1714', 'CVE-2023-1719',
     'CVE-2025-67886', 'CVE-2025-67887', 'CVE-2026-42945',
@@ -195,6 +196,46 @@ class TestNewVectors(unittest.TestCase):
     def test_html_editor_action_none_on_login_page(self):
         body = '<link href="/bitrix/panel/main/login.min.css"><input name="USER_LOGIN">'
         self.assertIsNone(self.plugins['BITRIX-html_editor_action'].check(_Req(text=body, status_code=200), 'https://t/'))
+
+
+class TestIntecCoreBDU(unittest.TestCase):
+    def setUp(self):
+        self.p = {p.cve_id: p for p in load_plugins()}['BDU:2026-05967']
+
+    def test_local_vulnerable_below_1_2_30(self):
+        root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(root, 'bitrix', 'modules', 'intec.core', 'install'))
+        with open(os.path.join(root, 'bitrix', 'modules', 'intec.core', 'install', 'version.php'), 'w') as f:
+            f.write('<?\n$arModuleVersion=array("VERSION"=>"1.2.21");\n')
+        h = LocalHost(); h.web_root = root
+        r = self.p.local_check(h)
+        self.assertEqual(r.confidence, 'confirmed')
+        self.assertEqual(r.severity, 'critical')
+
+    def test_local_patched_1_2_30(self):
+        root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(root, 'local', 'modules', 'intec.core', 'install'))
+        with open(os.path.join(root, 'local', 'modules', 'intec.core', 'install', 'version.php'), 'w') as f:
+            f.write('<?\n$arModuleVersion=array("VERSION"=>"1.2.30");\n')
+        h = LocalHost(); h.web_root = root
+        self.assertEqual(self.p.local_check(h).confidence, 'not_affected')
+
+    def test_local_not_applicable_when_absent(self):
+        root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(root, 'bitrix', 'modules'))
+        h = LocalHost(); h.web_root = root
+        self.assertIsNone(self.p.local_check(h))
+
+    def test_remote_exposed_runner_detected(self):
+        body = '<div class="bx-input-file" data-name="ct_probe_le0">... main.file.input ...</div>'
+        r = self.p.check(_Req(text=body, status_code=200), 'https://t/')
+        self.assertIsNotNone(r)
+        self.assertEqual(r.confidence, 'reachable')
+
+    def test_remote_none_without_widget_or_token(self):
+        self.assertIsNone(self.p.check(_Req(text='<html>home</html>', status_code=200), 'https://t/'))
+        # token reflected but no widget marker -> still None
+        self.assertIsNone(self.p.check(_Req(text='ct_probe_le0 only', status_code=200), 'https://t/'))
 
 
 class TestWebRootDetection(unittest.TestCase):

@@ -19,6 +19,7 @@ from utils.localhost import LocalHost
 _MODULES_OF_INTEREST = [
     'main', 'vote', 'translate', 'sale', 'catalog', 'iblock',
     'crm', 'socialnetwork', 'security', 'bitrix24',
+    'intec.core', 'intec.universe', 'intec.garderob', 'intec.startshop',
 ]
 
 # Sensitive config files that must not be world-readable / web-exposed.

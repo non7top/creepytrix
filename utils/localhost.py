@@ -150,13 +150,18 @@ class LocalHost:
         return None
 
     def bitrix_module_version(self, web_root: str, module: str) -> Optional[str]:
-        """Exact installed version of a Bitrix module (from install/version.php)."""
-        path = os.path.join(web_root, 'bitrix', 'modules', module, 'install', 'version.php')
-        content = self.read_file(path)
-        if not content:
-            return None
-        m = self._MODULE_VER_RE.search(content)
-        return m.group(1) if m else None
+        """Exact installed version of a Bitrix module (from install/version.php).
+
+        Checks local/modules first (custom/overriding), then bitrix/modules.
+        """
+        for base in ('local', 'bitrix'):
+            path = os.path.join(web_root, base, 'modules', module, 'install', 'version.php')
+            content = self.read_file(path)
+            if content:
+                m = self._MODULE_VER_RE.search(content)
+                if m:
+                    return m.group(1)
+        return None
 
     def bitrix_version(self, web_root: str) -> Optional[str]:
         """Platform (main module) version -- the exact SM_VERSION."""
