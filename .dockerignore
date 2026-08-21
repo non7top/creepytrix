@@ -1,0 +1,6 @@
+.git
+**/__pycache__
+*.log
+*.json
+.pytest_cache
+.ruff_cache

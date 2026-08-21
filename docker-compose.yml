@@ -1,0 +1,14 @@
+services:
+  creepytrix:
+    build:
+      context: .
+      args:
+        UID: ${DOCKER_UID:-1000}
+        GID: ${DOCKER_GID:-1000}
+    image: creepytrix:local
+    # Run as the host user so any files written to the bind mount are owned
+    # by the host user, not root.
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+    volumes:
+      - .:/app
+    working_dir: /app
