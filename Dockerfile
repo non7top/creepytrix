@@ -1,7 +1,7 @@
 # Disposable, non-root image for the Bitrix pentest tool.
 # uid/gid are passed in to match the host user so bind-mounted writes
 # (logs, JSON output) don't land root-owned on the host.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ARG UID=1000
 ARG GID=1000
