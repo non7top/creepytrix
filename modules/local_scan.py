@@ -130,6 +130,9 @@ class BitrixLocalScanner:
         # 3. CVE plugins' host-side confirmation.
         self._run_plugin_local_checks(result)
 
+        # 3b. Data-driven marketplace-module version check (1C-Bitrix vul_dev).
+        self._check_vuln_modules(web_root, result)
+
         # 4. Config-file permission hygiene (local-only visibility).
         if web_root:
             self._check_permissions(web_root, result)
@@ -139,7 +142,51 @@ class BitrixLocalScanner:
         if self.db_scan:
             self._scan_database(web_root, result)
 
+        # If anything serious turned up, point at the cleanup tool.
+        if any(f.severity in ('critical', 'high') and f.category in ('cve', 'db', 'module')
+               for f in result.findings):
+            self.logger.warning(
+                f"Cleanup tool available: php tools/bitrix_cleanup.php --root={web_root} "
+                "(dry-run by default; add --fix to quarantine + remove backdoors)")
+
         return result
+
+    def _check_vuln_modules(self, web_root: str, result: LocalResult):
+        """Flag installed marketplace modules older than their fixed version.
+
+        Data-driven from data/bitrix_vuln_modules.json (synced from the
+        1C-Bitrix vul_dev registry). intec.core is skipped here -- it has a
+        dedicated plugin (BDU:2026-05967) with remote detection.
+        """
+        import json
+        import os
+        path = os.path.join(os.path.dirname(__file__), '..', 'data', 'bitrix_vuln_modules.json')
+        try:
+            with open(path, encoding='utf-8') as f:
+                registry = json.load(f)
+        except Exception as e:
+            self.logger.debug(f"vuln-module registry unavailable: {e}")
+            return
+        covered_by_plugin = {'intec.core'}
+        for mod in registry.get('modules', []):
+            code = mod.get('code')
+            fixed = mod.get('fixed')
+            if not code or not fixed or code in covered_by_plugin:
+                continue
+            installed = self.host.bitrix_module_version(web_root, code)
+            if not installed:
+                continue
+            if self.host.version_tuple(installed) < self.host.version_tuple(fixed):
+                name = mod.get('name', '')
+                published = mod.get('published', '')
+                fix_link = mod.get('fix_link', '')
+                result.add(LocalFinding(
+                    severity='high', category='module',
+                    title=f'Vulnerable module: {code} {installed} < {fixed}',
+                    detail=f'{name} -- installed {installed}, fixed in {fixed} '
+                           f'(1C-Bitrix vul_dev, {published}). Update it. {fix_link}',
+                    evidence=f'{code} {installed}'))
+                self.logger.error(f"Vulnerable module: {code} {installed} < {fixed} ({name})")
 
     def _run_plugin_local_checks(self, result: LocalResult):
         try:

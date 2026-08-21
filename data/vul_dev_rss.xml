@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?><rss version="2.0">
+<channel>
+<title>Реестр решений сторонних разработчиков с выявленными уязвимостями</title>
+<link>https://www.1c-bitrix.ru</link>
+<lastBuildDate>Fri, 21 Aug 2026 16:55:08 +0300</lastBuildDate>
+<ttl>60</ttl>
+<item>
+	<title>Универсальный импорт</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>acrit.import</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/acrit.import/</src_link>
+		<fix_link>https://www.acrit-studio.ru/technical-support/nastroyka-modulya-universalnyy-import/ustranennye-uyazvimosti-v-versii-v1-79-0/</fix_link>
+	<version>до 1.79.0</version>
+	<pubDate>29.06.2026</pubDate>
+</item>
+<item>
+	<title>Ядро - базовый модуль для решений INTEC</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>intec.core</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/intec.core/</src_link>
+		<fix_link>https://sp.intecweb.ru/kb/articles/371265-uyazvimost-saytov-k-virusam-obnovlenie-bezopasnosti-dlya-resheniy-universe/</fix_link>
+	<version>до 1.2.30</version>
+	<pubDate>30.04.2026</pubDate>
+</item>
+<item>
+	<title>Многофункциональный экспорт/импорт в Excel</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>esol.allimportexport</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/esol.allimportexport/</src_link>
+		<fix_link>https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/</fix_link>
+	<version>до 0.6.4</version>
+	<pubDate>30.12.2025</pubDate>
+</item>
+<item>
+	<title>Импорт из Excel</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>kda.importexcel</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/kda.importexcel/</src_link>
+		<fix_link>https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/</fix_link>
+	<version>до 3.2.6</version>
+	<pubDate>30.12.2025</pubDate>
+</item>
+<item>
+	<title>Экспорт/Импорт товаров в Excel</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>esol.importexportexcel</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/esol.importexportexcel/</src_link>
+		<fix_link>https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/</fix_link>
+	<version>до 3.2.6</version>
+	<pubDate>30.12.2025</pubDate>
+</item>
+<item>
+	<title>Система бонусов. Программы лояльности</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>acrit.bonus</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/acrit.bonus/</src_link>
+		<fix_link>https://t.me/cyberok_news/140</fix_link>
+	<version>до 3.4.9</version>
+	<pubDate>10.09.2025</pubDate>
+</item>
+</channel>
+</rss>

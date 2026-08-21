@@ -1,0 +1,60 @@
+{
+  "source": "https://www.1c-bitrix.ru/vul_dev/rss/",
+  "note": "Auto-generated from the 1C-Bitrix vul_dev RSS by scripts/update_vuln_registry.py. A module is vulnerable when its installed version is < \"fixed\".",
+  "modules": [
+    {
+      "code": "acrit.bonus",
+      "name": "Система бонусов. Программы лояльности",
+      "fixed": "3.4.9",
+      "version_raw": "до 3.4.9",
+      "published": "10.09.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/acrit.bonus/",
+      "fix_link": "https://t.me/cyberok_news/140"
+    },
+    {
+      "code": "acrit.import",
+      "name": "Универсальный импорт",
+      "fixed": "1.79.0",
+      "version_raw": "до 1.79.0",
+      "published": "29.06.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/acrit.import/",
+      "fix_link": "https://www.acrit-studio.ru/technical-support/nastroyka-modulya-universalnyy-import/ustranennye-uyazvimosti-v-versii-v1-79-0/"
+    },
+    {
+      "code": "esol.allimportexport",
+      "name": "Многофункциональный экспорт/импорт в Excel",
+      "fixed": "0.6.4",
+      "version_raw": "до 0.6.4",
+      "published": "30.12.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/esol.allimportexport/",
+      "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
+    },
+    {
+      "code": "esol.importexportexcel",
+      "name": "Экспорт/Импорт товаров в Excel",
+      "fixed": "3.2.6",
+      "version_raw": "до 3.2.6",
+      "published": "30.12.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/esol.importexportexcel/",
+      "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
+    },
+    {
+      "code": "intec.core",
+      "name": "Ядро - базовый модуль для решений INTEC",
+      "fixed": "1.2.30",
+      "version_raw": "до 1.2.30",
+      "published": "30.04.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/intec.core/",
+      "fix_link": "https://sp.intecweb.ru/kb/articles/371265-uyazvimost-saytov-k-virusam-obnovlenie-bezopasnosti-dlya-resheniy-universe/"
+    },
+    {
+      "code": "kda.importexcel",
+      "name": "Импорт из Excel",
+      "fixed": "3.2.6",
+      "version_raw": "до 3.2.6",
+      "published": "30.12.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/kda.importexcel/",
+      "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
+    }
+  ]
+}
