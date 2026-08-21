@@ -33,6 +33,7 @@ class VULN_IntecCore_BDU_2026_05967(CVECheck):
     cve_id = 'BDU:2026-05967'
     title = 'INTEC intec.core unauthenticated RCE (arbitrary IncludeComponent)'
     affected = 'INTEC intec.core <= 1.2.29 (fixed 1.2.30)'
+    module_code = 'intec.core'   # authoritative here; skip in the registry check
     severity = 'critical'
     auth = 'unauth'
     references = [

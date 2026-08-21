@@ -125,14 +125,17 @@ class BitrixLocalScanner:
                 result.module_versions[module] = mv
 
         # 3. CVE plugins' host-side confirmation.
-        self._run_plugin_local_checks(result)
+        covered_codes = self._run_plugin_local_checks(result)
 
         # 3b. Data-driven marketplace-module version check (1C-Bitrix vul_dev).
-        checked_codes = self._check_vuln_modules(web_root, result)
+        #     Skip modules a dedicated CVE plugin already reported (avoids
+        #     double-flagging, e.g. intec.core via both BDU:2026-05967 and here).
+        checked_codes = self._check_vuln_modules(web_root, result, skip_codes=covered_codes)
 
-        # Print installed core modules not already evaluated by _check_vuln_modules
+        # Print installed core modules not already evaluated above (neither by a
+        # CVE plugin nor by the registry check), so nothing is listed twice.
         for mod, ver in result.module_versions.items():
-            if mod not in checked_codes:
+            if mod not in checked_codes and mod not in covered_codes:
                 self.logger.info(f"Module version: {mod}={ver}")
 
         # 4. Config-file permission hygiene (local-only visibility).
@@ -153,14 +156,17 @@ class BitrixLocalScanner:
 
         return result
 
-    def _check_vuln_modules(self, web_root: str, result: LocalResult) -> set:
+    def _check_vuln_modules(self, web_root: str, result: LocalResult,
+                            skip_codes: Optional[set] = None) -> set:
         """Flag installed marketplace modules older than their fixed version.
 
         Data-driven from data/bitrix_vuln_modules.json (synced from the
-        1C-Bitrix vul_dev registry).
+        1C-Bitrix vul_dev registry). ``skip_codes`` are module codes already
+        reported by a dedicated CVE plugin -- skipped here to avoid duplicates.
         """
         import json
         import os
+        skip_codes = skip_codes or set()
         path = os.path.join(os.path.dirname(__file__), '..', 'data', 'bitrix_vuln_modules.json')
         try:
             with open(path, encoding='utf-8') as f:
@@ -178,6 +184,8 @@ class BitrixLocalScanner:
             fixed = mod.get('fixed')
             if not code or not fixed:
                 continue
+            if code in skip_codes:
+                continue  # already covered by a dedicated CVE plugin
             installed = self.host.bitrix_module_version(web_root, code)
             if not installed:
                 continue
@@ -207,12 +215,16 @@ class BitrixLocalScanner:
                 self.logger.info(f"Checked vul_dev registry ({len(mod_list)} rules): none installed on target")
         return checked_codes
 
-    def _run_plugin_local_checks(self, result: LocalResult):
+    def _run_plugin_local_checks(self, result: LocalResult) -> set:
+        """Run every CVE plugin's host-side check. Returns the set of
+        marketplace module codes a plugin authoritatively covered, so the
+        registry check can skip them and not report the same module twice."""
+        covered_codes = set()
         try:
             from modules.cves import load_plugins
         except Exception as e:  # pragma: no cover
             self.logger.debug(f"CVE plugin registry unavailable: {e}")
-            return
+            return covered_codes
         for plugin in load_plugins():
             try:
                 outcome = plugin.local_check(self.host)
@@ -221,6 +233,9 @@ class BitrixLocalScanner:
                 continue
             if outcome is None:
                 continue
+            code = getattr(plugin, 'module_code', None)
+            if code:
+                covered_codes.add(code)
             severity = outcome.severity or (
                 'critical' if outcome.detected else 'info')
             result.add(LocalFinding(
@@ -236,6 +251,7 @@ class BitrixLocalScanner:
                 self.logger.success(f"{plugin.cve_id}: not affected ({outcome.evidence})")
             else:
                 self.logger.warning(outcome.detail)
+        return covered_codes
 
     def _scan_database(self, web_root: str, result: LocalResult):
         import os

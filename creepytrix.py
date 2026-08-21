@@ -444,57 +444,38 @@ def print_api_results(result: APIResult, logger: ColoredLogger):
             logger.warning(f"  {finding.description}")
 
 
-def log_by_severity(logger: ColoredLogger, severity: str, message: str):
-    """Emit a message at the log level matching a finding's severity, so the
-    logger colors the whole line (critical/high -> red, medium -> yellow,
-    low/info -> plain)."""
-    sev = (severity or '').lower()
-    if sev == 'critical':
-        logger.critical(message)
-    elif sev == 'high':
-        logger.error(message)
-    elif sev == 'medium':
-        logger.warning(message)
-    else:
-        logger.info(message)
-
-
 def print_local_results(result: LocalResult, logger: ColoredLogger):
-    """Print local host scan results"""
+    """Print a compact recap of the local scan.
+
+    The scanner already logs every discovery live as it runs -- web root,
+    platform/module versions, each CVE verdict, permission issues -- each at the
+    log level (and thus the color) matching its severity. This block only
+    AGGREGATES; it deliberately does not re-list those lines, which is what
+    used to make the local output look doubled.
+    """
     logger.info("=" * 60)
     logger.info("LOCAL HOST SCAN RESULTS")
     logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
-    if result.web_root:
-        logger.info(f"Web Root: {result.web_root}")
     logger.info(f"Distro Family: {result.distro}")
-
-    if result.bitrix_version:
-        logger.success(f"Bitrix Version (exact): {result.bitrix_version}")
-    else:
+    if not result.bitrix_version:
         logger.warning("Bitrix version not determined (check --web-root)")
 
-    if result.module_versions:
-        logger.info("Module Versions:")
-        for name, ver in result.module_versions.items():
-            logger.info(f"  {name}: {ver}")
+    # Severity scoreboard (counts only -- the findings themselves scrolled by
+    # above during the scan).
+    logger.info(
+        f"Findings: {summary['total_findings']} total -- "
+        f"critical {summary['critical']}, high {summary['high']}, "
+        f"medium {summary['medium']}, low {summary['low']}, info {summary['info']}")
 
     if summary['confirmed_vulnerable'] > 0:
-        logger.critical(f"\n!!! CONFIRMED VULNERABLE: {summary['confirmed_vulnerable']} !!!")
-
-    logger.info(f"\nTotal Findings: {summary['total_findings']}")
-    for finding in result.findings:
-        if finding.category == 'cve':
-            msg = f"  [{finding.severity.upper()}] {finding.title}: {finding.detail}"
-        elif finding.category == 'permission':
-            msg = f"  [{finding.severity.upper()}] {finding.title}"
-        else:
-            continue
-        # Log each finding at the level matching its severity so the line is
-        # colored accordingly (critical -> red, high -> red, medium -> yellow).
-        log_by_severity(logger, finding.severity, msg)
+        logger.critical(
+            f"CONFIRMED VULNERABLE: {summary['confirmed_vulnerable']} "
+            "-- see the findings logged above; remediate with tools/bitrix_cleanup.php")
+    else:
+        logger.success("No confirmed version-based vulnerabilities")
 
 
 def save_results(results: dict, output_file: str, logger: ColoredLogger) -> bool:

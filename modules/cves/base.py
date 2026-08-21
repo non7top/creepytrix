@@ -42,6 +42,11 @@ class CVECheck:
     cve_id: str = ''
     title: str = ''
     affected: str = ''            # affected product / version range
+    # Marketplace module code this plugin authoritatively covers (e.g.
+    # 'intec.core'). When set, the data-driven vul_dev registry check skips this
+    # code so the module is not reported twice (once by the plugin, once by the
+    # generic registry). None => the registry check owns it.
+    module_code: Optional[str] = None
     severity: str = 'high'        # critical | high | medium | low
     auth: str = 'unauth'          # unauth | authenticated | admin
     disputed: bool = False        # vendor disputes the classification
