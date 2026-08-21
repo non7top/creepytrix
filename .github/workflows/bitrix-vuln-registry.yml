@@ -24,9 +24,11 @@ jobs:
           python-version: '3.12'
 
       - name: Sync registry from vul_dev RSS
+        id: sync
         run: python3 scripts/update_vuln_registry.py
 
       - name: Open PR if the registry changed
+        id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
           branch: auto/bitrix-vuln-registry
@@ -35,6 +37,11 @@ jobs:
           body: |
             Automated weekly sync of the 1C-Bitrix third-party vulnerability
             registry: https://www.1c-bitrix.ru/vul_dev/rss/
+
+            Each run bumps `version` + `generated` in `bitrix_vuln_modules.json`.
+            When no module rules changed this is a pure version/freshness bump and
+            is **auto-merged**; when module rules changed the PR is left open for
+            review (`modules_changed=true`).
 
             Review the diff in:
             - `data/vul_dev_rss.xml` (raw snapshot for comparison)
@@ -54,3 +61,15 @@ jobs:
             data/vul_dev_rss.xml
             data/bitrix_vuln_modules.json
           delete-branch: true
+
+      # A no-module-change run is just a version/freshness bump -- nothing to
+      # review, so merge it automatically. Runs that DID change module rules are
+      # left as an open PR for a human. Merge-commit only (repo merge policy);
+      # branch protection allows this (0 required reviews).
+      - name: Auto-merge version bump (no module changes)
+        if: >-
+          steps.sync.outputs.modules_changed == 'false' &&
+          steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge --merge --delete-branch "${{ steps.cpr.outputs.pull-request-number }}"

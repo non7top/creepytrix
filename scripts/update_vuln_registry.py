@@ -16,6 +16,7 @@ import re
 import sys
 import urllib.request
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
 
 RSS_URL = 'https://www.1c-bitrix.ru/vul_dev/rss/'
 PAGE_URL = 'https://www.1c-bitrix.ru/vul_dev/'
@@ -236,9 +237,13 @@ def parse(xml_bytes: bytes):
     return mods
 
 
-def write_registry(mods):
+def write_registry(mods, version, generated):
     payload = {
         'source': RSS_URL,
+        # Monotonic revision, bumped every sync run (even a no-change re-verify),
+        # plus the UTC date the registry was last regenerated.
+        'version': version,
+        'generated': generated,
         'note': ('Auto-generated from the 1C-Bitrix vul_dev registry by '
                  'scripts/update_vuln_registry.py, plus curated withdrawn/unpublished '
                  'modules from bitrix_vuln_modules_manual.json. A module is vulnerable '
@@ -252,12 +257,52 @@ def write_registry(mods):
         f.write('\n')
 
 
-def load_existing():
+def load_existing_payload():
     try:
         with open(JSON_OUT, encoding='utf-8') as f:
-            return json.load(f).get('modules', [])
+            return json.load(f)
     except Exception:
-        return []
+        return {}
+
+
+def load_existing():
+    return load_existing_payload().get('modules', [])
+
+
+def next_version(existing_payload):
+    """Monotonic registry revision: existing 'version' + 1 (first run -> 1)."""
+    try:
+        return int(existing_payload.get('version', 0)) + 1
+    except (TypeError, ValueError):
+        return 1
+
+
+def _rule_key(m):
+    """Detection-relevant identity of a module rule -- what actually matters for
+    flagging. Cosmetic fields (name, dates, links) are ignored so a pure
+    metadata refresh doesn't read as a vulnerability change."""
+    return (m.get('code'), m.get('fixed'), bool(m.get('withdrawn')))
+
+
+def modules_changed(old_mods, new_mods):
+    """True if the set of module rules differs (order-independent)."""
+    return sorted(map(_rule_key, old_mods)) != sorted(map(_rule_key, new_mods))
+
+
+def _today_utc():
+    return datetime.now(timezone.utc).strftime('%Y-%m-%d')
+
+
+def _emit_output(name, value):
+    """Expose a value to later workflow steps via $GITHUB_OUTPUT (no-op locally)."""
+    path = os.environ.get('GITHUB_OUTPUT')
+    if not path:
+        return
+    try:
+        with open(path, 'a', encoding='utf-8') as f:
+            f.write(f"{name}={value}\n")
+    except OSError:
+        pass
 
 
 def main(argv):
@@ -266,8 +311,9 @@ def main(argv):
     # Local, no-network mode: fold the curated manual entries into the EXISTING
     # generated registry without re-fetching (keeps scraped entries intact).
     if '--merge-manual' in argv:
-        mods = reduce_latest(load_existing() + manual_mods)
-        write_registry(mods)
+        existing = load_existing_payload()
+        mods = reduce_latest(existing.get('modules', []) + manual_mods)
+        write_registry(mods, next_version(existing), _today_utc())
         print(f"{len(mods)} modules after manual merge -> {JSON_OUT}")
         return 0
 
@@ -287,8 +333,12 @@ def main(argv):
     # sync still runs and the weekly PR is still opened.
     report_unmatched(unmatched, manual_mods)
 
+    existing = load_existing_payload()
     rss_mods = parse(xml_bytes)
     mods = reduce_latest(rss_mods + page_rows + manual_mods)
+    changed = modules_changed(existing.get('modules', []), mods)
+    version = next_version(existing)
+
     # Normalize the snapshot (LF endings, no trailing whitespace) so the
     # committed baseline and CI-written file compare cleanly -- avoids spurious
     # weekly diffs from server-side CRLF/trailing spaces.
@@ -297,8 +347,15 @@ def main(argv):
     os.makedirs(os.path.dirname(RSS_SNAPSHOT), exist_ok=True)
     with open(RSS_SNAPSHOT, 'w', encoding='utf-8', newline='\n') as f:
         f.write(normalized)
-    write_registry(mods)
-    print(f"{len(mods)} modules written to {JSON_OUT}")
+    write_registry(mods, version, _today_utc())
+
+    # Tell the workflow whether real module rules changed. False => it's just a
+    # version/freshness bump the workflow can auto-merge without review.
+    _emit_output('modules_changed', 'true' if changed else 'false')
+    _emit_output('version', str(version))
+    print(f"{len(mods)} modules, registry version {version} "
+          f"({'module changes' if changed else 'no module changes -- version bump'}) "
+          f"-> {JSON_OUT}")
     return 0
 
 

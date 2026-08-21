@@ -104,6 +104,24 @@ class TestReportUnmatched(unittest.TestCase):
         self.assertEqual([g['name'] for g in gaps], ['Аспро: Приорити'])
 
 
+class TestVersioning(unittest.TestCase):
+    def test_next_version_starts_at_one(self):
+        self.assertEqual(upd.next_version({}), 1)
+        self.assertEqual(upd.next_version({'version': 4}), 5)
+        self.assertEqual(upd.next_version({'version': 'bad'}), 1)
+
+    def test_modules_changed_ignores_cosmetic_fields(self):
+        old = [{'code': 'a.b', 'fixed': '1.0.0', 'name': 'Old name', 'published': '01.01.2025'}]
+        new = [{'code': 'a.b', 'fixed': '1.0.0', 'name': 'New name', 'published': '09.09.2025'}]
+        self.assertFalse(upd.modules_changed(old, new))  # only name/date differ
+
+    def test_modules_changed_detects_new_fixed_and_withdrawn(self):
+        base = [{'code': 'a.b', 'fixed': '1.0.0'}]
+        self.assertTrue(upd.modules_changed(base, [{'code': 'a.b', 'fixed': '1.1.0'}]))
+        self.assertTrue(upd.modules_changed(base, [{'code': 'a.b', 'fixed': None, 'withdrawn': True}]))
+        self.assertTrue(upd.modules_changed(base, base + [{'code': 'c.d', 'fixed': '2.0.0'}]))
+
+
 class TestReduceLatest(unittest.TestCase):
     def test_withdrawn_supersedes_versioned(self):
         rows = [
