@@ -444,6 +444,21 @@ def print_api_results(result: APIResult, logger: ColoredLogger):
             logger.warning(f"  {finding.description}")
 
 
+def log_by_severity(logger: ColoredLogger, severity: str, message: str):
+    """Emit a message at the log level matching a finding's severity, so the
+    logger colors the whole line (critical/high -> red, medium -> yellow,
+    low/info -> plain)."""
+    sev = (severity or '').lower()
+    if sev == 'critical':
+        logger.critical(message)
+    elif sev == 'high':
+        logger.error(message)
+    elif sev == 'medium':
+        logger.warning(message)
+    else:
+        logger.info(message)
+
+
 def print_local_results(result: LocalResult, logger: ColoredLogger):
     """Print local host scan results"""
     logger.info("=" * 60)
@@ -472,9 +487,14 @@ def print_local_results(result: LocalResult, logger: ColoredLogger):
     logger.info(f"\nTotal Findings: {summary['total_findings']}")
     for finding in result.findings:
         if finding.category == 'cve':
-            logger.info(f"  [{finding.severity.upper()}] {finding.title}: {finding.detail}")
+            msg = f"  [{finding.severity.upper()}] {finding.title}: {finding.detail}"
         elif finding.category == 'permission':
-            logger.warning(f"  [{finding.severity.upper()}] {finding.title}")
+            msg = f"  [{finding.severity.upper()}] {finding.title}"
+        else:
+            continue
+        # Log each finding at the level matching its severity so the line is
+        # colored accordingly (critical -> red, high -> red, medium -> yellow).
+        log_by_severity(logger, finding.severity, msg)
 
 
 def save_results(results: dict, output_file: str, logger: ColoredLogger) -> bool:
