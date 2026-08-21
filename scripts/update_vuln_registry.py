@@ -130,9 +130,17 @@ def parse(xml_bytes: bytes):
 def main(argv):
     if len(argv) > 1 and os.path.isfile(argv[1]):
         xml_bytes = open(argv[1], 'rb').read()
+        page_rows = []
     else:
         xml_bytes = fetch(RSS_URL)
-    mods = parse(xml_bytes)
+        try:
+            page_rows = collect_pages()
+        except Exception as e:
+            print(f"Warning: could not fetch paginated HTML pages: {e}", file=sys.stderr)
+            page_rows = []
+
+    rss_mods = parse(xml_bytes)
+    mods = reduce_latest(rss_mods + page_rows)
     os.makedirs(os.path.dirname(JSON_OUT), exist_ok=True)
     # Normalize the snapshot (LF endings, no trailing whitespace) so the
     # committed baseline and CI-written file compare cleanly -- avoids spurious

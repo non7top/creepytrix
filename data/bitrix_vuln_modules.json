@@ -21,6 +21,141 @@
       "fix_link": "https://www.acrit-studio.ru/technical-support/nastroyka-modulya-universalnyy-import/ustranennye-uyazvimosti-v-versii-v1-79-0/"
     },
     {
+      "code": "aspro.allcorp",
+      "name": "Аспро: Корпоративный сайт",
+      "fixed": "1.1.17",
+      "version_raw": "до 1.1.17",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp2",
+      "name": "Аспро: Корпоративный сайт 2.0",
+      "fixed": "1.2.25",
+      "version_raw": "до 1.2.25",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp2/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3",
+      "name": "Аспро: Корпоративный сайт 3.0",
+      "fixed": "1.2.11",
+      "version_raw": "до 1.2.11",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3digital",
+      "name": "Аспро: Digital 2.0",
+      "fixed": "1.0.17",
+      "version_raw": "до 1.0.17",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3digital/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3landscape",
+      "name": "Аспро: Ландшафт 2.0",
+      "fixed": "1.0.6",
+      "version_raw": "до 1.0.6",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3landscape/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3medc",
+      "name": "Аспро: Медицинский центр 3.0",
+      "fixed": "1.0.21",
+      "version_raw": "до 1.0.21",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3medc/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3metal",
+      "name": "Аспро: Металл",
+      "fixed": "1.0.21",
+      "version_raw": "до 1.0.21",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3metal/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3resort",
+      "name": "Аспро: Курорт 2.0",
+      "fixed": "1.0.10",
+      "version_raw": "до 1.0.10",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3resort/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.allcorp3stroy",
+      "name": "Аспро: Стройка 2.0",
+      "fixed": "1.0.16",
+      "version_raw": "до 1.0.16",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.allcorp3stroy/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.lite",
+      "name": "Аспро: Лайтшоп",
+      "fixed": "1.1.6",
+      "version_raw": "до 1.1.6",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.lite/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.max",
+      "name": "Аспро: Максимум",
+      "fixed": "2.1.9",
+      "version_raw": "до 2.1.9",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.max/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.mshop",
+      "name": "Аспро: Маркет",
+      "fixed": "1.8.6",
+      "version_raw": "до 1.8.6",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.mshop/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.next",
+      "name": "Аспро: Next",
+      "fixed": "1.9.9",
+      "version_raw": "до 1.9.9",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.next/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.optimus",
+      "name": "Аспро: Оптимус",
+      "fixed": "1.7.8",
+      "version_raw": "до 1.7.8",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.optimus/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.tires2",
+      "name": "Аспро: Шины и диски 2.0",
+      "fixed": "1.1.14",
+      "version_raw": "до 1.1.14",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.tires2/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
       "code": "esol.allimportexport",
       "name": "Многофункциональный экспорт/импорт в Excel",
       "fixed": "0.6.4",
@@ -39,6 +174,24 @@
       "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
     },
     {
+      "code": "esol.importxml",
+      "name": "Импорт из XML, YML, JSON. Загрузка каталога товаров 1С-Битрикс",
+      "fixed": "1.1.7",
+      "version_raw": "до 1.1.7",
+      "published": "13.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/esol.importxml/",
+      "fix_link": "https://esolutions.su/bezopastnost-saytov/"
+    },
+    {
+      "code": "esol.massedit",
+      "name": "Массовая обработка элементов инфоблока (товаров)",
+      "fixed": "0.7.8",
+      "version_raw": "до 0.7.8",
+      "published": "13.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/esol.massedit/",
+      "fix_link": "https://esolutions.su/bezopastnost-saytov/"
+    },
+    {
       "code": "intec.core",
       "name": "Ядро - базовый модуль для решений INTEC",
       "fixed": "1.2.30",
@@ -48,6 +201,15 @@
       "fix_link": "https://sp.intecweb.ru/kb/articles/371265-uyazvimost-saytov-k-virusam-obnovlenie-bezopasnosti-dlya-resheniy-universe/"
     },
     {
+      "code": "kda.exportexcel",
+      "name": "Экспорт в Excel. Выгрузка каталога товаров 1С-Битрикс. Создание прайс-листа",
+      "fixed": "1.2.3",
+      "version_raw": "до 1.2.3",
+      "published": "13.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/kda.exportexcel/",
+      "fix_link": "https://mayakit.ru/about/news/bezopacnost-sajtov"
+    },
+    {
       "code": "kda.importexcel",
       "name": "Импорт из Excel",
       "fixed": "3.2.6",
@@ -55,6 +217,42 @@
       "published": "30.12.2025",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/kda.importexcel/",
       "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
+    },
+    {
+      "code": "shs.parser",
+      "name": "Сотбит: Парсер контента – сайты, excel, xml, yml, csv, rss",
+      "fixed": "5.10.4",
+      "version_raw": "до 5.10.4",
+      "published": "17.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/shs.parser/",
+      "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
+    },
+    {
+      "code": "sotbit.htmleditoraddition",
+      "name": "Сотбит: Быстрая загрузка картинок в визуальном редакторе",
+      "fixed": "1.1.0",
+      "version_raw": "до 1.1.0",
+      "published": "17.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/sotbit.htmleditoraddition/",
+      "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
+    },
+    {
+      "code": "sotbit.regions",
+      "name": "Сотбит: Мультирегиональность",
+      "fixed": "1.8.5",
+      "version_raw": "до 1.8.5",
+      "published": "17.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/sotbit.regions/",
+      "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
+    },
+    {
+      "code": "sotbit.reviews",
+      "name": "Сотбит: Расширенные отзывы",
+      "fixed": "2.0.0",
+      "version_raw": "до 2.0.0",
+      "published": "17.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/sotbit.reviews/",
+      "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
     }
   ]
 }
