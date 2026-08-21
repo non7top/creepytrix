@@ -36,37 +36,63 @@ def fetch(url: str) -> bytes:
         return r.read()
 
 
-def parse_html(html_bytes):
-    """Parse the full vul_dev registry page (a Bitrix main-grid table).
+def _cell_text(row, column_id):
+    """Plain text of a grid cell by data-column-id (tags stripped)."""
+    m = re.search(r'data-column-id="%s".*?<div class="main-grid-cell-inner">(.*?)</div>'
+                  % re.escape(column_id), row, re.S)
+    if not m:
+        return ''
+    return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', m.group(1))).strip()
 
-    The RSS carries only recent items; the HTML page has the complete list.
+
+def parse_html(html_bytes):
+    """Parse a vul_dev registry grid page.
+
+    Returns (matched, unmatched):
+      - matched: rows with a marketplace link AND a "до X.Y.Z" version -- the
+        ones we can turn into a version-comparison rule.
+      - unmatched: every other row (no link, or no parseable version -- e.g.
+        withdrawn "снято с публикации" modules). The grid gives these neither a
+        module code nor a fixed version, so they can only be covered by the
+        curated manual supplement. Reported so a human can add the missing slug.
     """
     text = html_bytes.decode('utf-8', 'replace') if isinstance(html_bytes, bytes) else html_bytes
-    rows_out = []
+    matched, unmatched = [], []
     for row in re.split(r'<tr class="main-grid-row main-grid-row-body"', text)[1:]:
-        mm = re.search(
-            r'data-column-id="vul_module".*?solutions/([a-z0-9._]+)/"[^>]*>(.*?)</a>',
+        mcell = re.search(
+            r'data-column-id="vul_module".*?<div class="main-grid-cell-inner">(.*?)</div>',
             row, re.S)
-        vm = re.search(r'data-column-id="vul_issue_version".*?до\s*([\d]+(?:\.[\d]+)+)', row, re.S)
-        if not mm or not vm:
+        if not mcell:
             continue
-        code = mm.group(1).lower()
-        if code in _SKIP_CODES:
-            continue
-        name = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', mm.group(2))).strip()
-        fixed = vm.group(1)
-        dm = re.search(r'data-column-id="vul_date_publication2".*?>\s*([\d]{2}\.[\d]{2}\.[\d]{4})', row, re.S)
-        lm = re.search(r'data-column-id="vul_mp_link".*?href="([^"]+)"', row, re.S)
-        rows_out.append({
-            'code': code,
-            'name': name,
-            'fixed': fixed,
-            'version_raw': 'до ' + fixed,
-            'published': dm.group(1) if dm else '',
-            'src_link': 'https://marketplace.1c-bitrix.ru/solutions/%s/' % code,
-            'fix_link': lm.group(1) if lm else '',
-        })
-    return rows_out
+        cell = mcell.group(1)
+        name = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', cell)).strip()
+        link = re.search(r'solutions/([a-z0-9._]+)/', cell)
+        vm = re.search(r'до\s*([\d]+(?:\.[\d]+)+)', _cell_text(row, 'vul_issue_version'))
+        code = link.group(1).lower() if link else None
+
+        if code and code in _SKIP_CODES:
+            continue  # Bitrix's own editions -- not third-party modules
+
+        if link and vm:
+            dm = re.search(r'([\d]{2}\.[\d]{2}\.[\d]{4})', _cell_text(row, 'vul_date_publication2'))
+            lm = re.search(r'data-column-id="vul_mp_link".*?href="([^"]+)"', row, re.S)
+            matched.append({
+                'code': code,
+                'name': name,
+                'fixed': vm.group(1),
+                'version_raw': 'до ' + vm.group(1),
+                'published': dm.group(1) if dm else '',
+                'src_link': 'https://marketplace.1c-bitrix.ru/solutions/%s/' % code,
+                'fix_link': lm.group(1) if lm else '',
+            })
+        elif name:
+            unmatched.append({
+                'name': name,
+                'code': code,   # None when the row has no marketplace link
+                'status': _cell_text(row, 'vul_issue_version'),
+                'published': _cell_text(row, 'vul_date_publication2'),
+            })
+    return matched, unmatched
 
 
 def _vtuple(v):
@@ -113,21 +139,78 @@ def reduce_latest(rows):
 
 
 def collect_pages():
-    """Walk the grid's AJAX pagination until a page adds no new modules."""
+    """Walk the grid's AJAX pagination until a page adds no new rows.
+
+    Returns (matched_rows, unmatched_rows). The stop condition counts BOTH kinds
+    of new rows -- otherwise a trailing page that holds only unmatched
+    (withdrawn) rows would be missed once the matched codes are exhausted.
+    """
     page_tmpl = (PAGE_URL + '?internal=true&grid_id=vul_dev_grid'
                  '&grid_action=pagination&vul_dev_grid=page-%d')
-    rows, seen = [], set()
+    rows, unmatched = [], []
+    seen_codes, seen_unmatched = set(), set()
     for n in range(1, 20):  # safety cap; grid wraps after the last page
         try:
-            page_rows = parse_html(fetch(page_tmpl % n))
+            page_rows, page_unmatched = parse_html(fetch(page_tmpl % n))
         except Exception:
             break
-        fresh = [m for m in page_rows if m['code'] not in seen]
-        if not fresh:
+        new = False
+        for m in page_rows:
+            if m['code'] not in seen_codes:
+                seen_codes.add(m['code'])
+                rows.append(m)
+                new = True
+        for u in page_unmatched:
+            key = (u['name'], u.get('code'))
+            if key not in seen_unmatched:
+                seen_unmatched.add(key)
+                unmatched.append(u)
+                new = True
+        if not new:
             break
-        rows.extend(page_rows)
-        seen.update(m['code'] for m in page_rows)
-    return rows
+    return rows, unmatched
+
+
+def report_unmatched(unmatched, manual_mods):
+    """Warn about grid rows we can't turn into a rule and that the manual
+    supplement doesn't cover yet -- typically a newly withdrawn module whose
+    slug still needs adding to data/bitrix_vuln_modules_manual.json.
+
+    Emits a GitHub Actions ::warning:: annotation and a run-summary block so the
+    gap is visible on the weekly sync PR. Returns the list of gaps.
+    """
+    covered_codes = {m.get('code') for m in manual_mods}
+    covered_names = {(m.get('name') or '').strip() for m in manual_mods}
+    gaps = [u for u in unmatched
+            if u['name'] not in covered_names and u.get('code') not in covered_codes]
+    if not gaps:
+        return gaps
+
+    lines = [f"{len(gaps)} vul_dev row(s) could not be matched to a module and "
+             "are NOT in the manual supplement -- add each slug to "
+             "data/bitrix_vuln_modules_manual.json:"]
+    for g in gaps:
+        code = g.get('code') or '(no marketplace link -- find the slug)'
+        lines.append(f"  - {g['name']} [{g.get('status', '')}] -> code: {code}")
+    block = '\n'.join(lines)
+
+    print('\n' + block, file=sys.stderr)
+    # GitHub Actions annotation (one line; newlines encoded so it stays intact).
+    print('::warning title=Unmatched vul_dev rows::'
+          + block.replace('\n', '%0A'))
+    # Append to the job's run summary when running under Actions.
+    summary = os.environ.get('GITHUB_STEP_SUMMARY')
+    if summary:
+        try:
+            with open(summary, 'a', encoding='utf-8') as f:
+                f.write('### ⚠️ Unmatched vul_dev rows\n\n')
+                for g in gaps:
+                    f.write(f"- **{g['name']}** ({g.get('status','')}) — "
+                            f"code: `{g.get('code') or 'unknown — add slug'}`\n")
+                f.write('\nAdd each to `data/bitrix_vuln_modules_manual.json`.\n')
+        except OSError:
+            pass
+    return gaps
 
 
 def parse(xml_bytes: bytes):
@@ -190,14 +273,19 @@ def main(argv):
 
     if len(argv) > 1 and os.path.isfile(argv[1]):
         xml_bytes = open(argv[1], 'rb').read()
-        page_rows = []
+        page_rows, unmatched = [], []
     else:
         xml_bytes = fetch(RSS_URL)
         try:
-            page_rows = collect_pages()
+            page_rows, unmatched = collect_pages()
         except Exception as e:
             print(f"Warning: could not fetch paginated HTML pages: {e}", file=sys.stderr)
-            page_rows = []
+            page_rows, unmatched = [], []
+
+    # Warn about grid rows we can't scrape a rule from that the manual supplement
+    # doesn't cover yet (newly withdrawn modules needing a slug). Non-fatal -- the
+    # sync still runs and the weekly PR is still opened.
+    report_unmatched(unmatched, manual_mods)
 
     rss_mods = parse(xml_bytes)
     mods = reduce_latest(rss_mods + page_rows + manual_mods)

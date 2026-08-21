@@ -38,10 +38,18 @@ jobs:
 
             Review the diff in:
             - `data/vul_dev_rss.xml` (raw snapshot for comparison)
-            - `data/bitrix_vuln_modules.json` (parsed module -> fixed version)
+            - `data/bitrix_vuln_modules.json` (parsed module -> fixed version;
+              also merges the curated `data/bitrix_vuln_modules_manual.json`)
 
             New or changed rows mean new vulnerable marketplace modules to detect
             in local mode. If empty, no changes were found this week.
+
+            ⚠️ **Check the "Sync registry" step's run summary / annotations.**
+            The grid lists some modules WITHOUT a marketplace link (unpublished /
+            withdrawn — "снято с публикации"); those carry no module code and
+            can't be scraped. If the sync reports an *unmatched* row, add its
+            slug to `data/bitrix_vuln_modules_manual.json` and push to this
+            branch so the module is detected in local mode.
           add-paths: |
             data/vul_dev_rss.xml
             data/bitrix_vuln_modules.json
