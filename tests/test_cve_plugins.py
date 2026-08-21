@@ -150,10 +150,17 @@ class TestLocalScanner(unittest.TestCase):
         self.assertIn('not_affected', cve['CVE-2025-67887'].title)
         self.assertEqual(res.to_dict()['summary']['confirmed_vulnerable'], 0)
 
-    def test_no_web_root_is_graceful(self):
+    def test_bails_out_when_not_bitrix(self):
         res = BitrixLocalScanner(_NullLog(), web_root='/nonexistent-xyz').scan()
         self.assertIsNone(res.web_root)
         self.assertIsNone(res.bitrix_version)
+        self.assertEqual(len(res.findings), 0)  # bailed: no host/plugin checks ran
+
+    def test_bails_out_on_empty_dir(self):
+        import tempfile as _tf
+        res = BitrixLocalScanner(_NullLog(), web_root=_tf.mkdtemp()).scan()
+        self.assertIsNone(res.web_root)
+        self.assertEqual(len(res.findings), 0)
 
 
 class TestBitrixSourceParsing(unittest.TestCase):

@@ -90,35 +90,41 @@ class BitrixLocalScanner:
         result = LocalResult()
         result.distro = self.host.distro_family()
 
-        # 1. Locate the Bitrix document root.
+        # 1. Locate the Bitrix document root. Bail out if this is not a Bitrix
+        #    installation -- local mode only makes sense against one.
         web_root = self.host.find_web_root(self.explicit_root)
         result.web_root = web_root
         self.host.web_root = web_root
         if not web_root:
-            self.logger.warning(
-                "No Bitrix web root found (looked for bitrix/modules/main). "
-                "Use --web-root to point at the document root.")
-        else:
-            self.logger.success(f"Bitrix web root: {web_root}")
+            if self.explicit_root:
+                self.logger.error(
+                    f"Not a Bitrix installation: {self.explicit_root} "
+                    "(no bitrix/modules/main found). Aborting local scan.")
+            else:
+                self.logger.error(
+                    "No Bitrix web root found (looked for bitrix/modules/main in "
+                    "common document roots). Point at it with --web-root PATH. "
+                    "Aborting local scan.")
+            return result
+        self.logger.success(f"Bitrix web root: {web_root}")
 
         # 2. Exact versions (the headline of local mode).
-        if web_root:
-            version = self.host.bitrix_version(web_root)
-            result.bitrix_version = version
-            if version:
-                self.logger.success(f"Bitrix platform version: {version}")
-                result.add(LocalFinding(
-                    severity='info', category='version',
-                    title='Bitrix platform version',
-                    detail=f'Exact installed version: {version}',
-                    evidence=version))
-            for module in _MODULES_OF_INTEREST:
-                mv = self.host.bitrix_module_version(web_root, module)
-                if mv:
-                    result.module_versions[module] = mv
-            if result.module_versions:
-                self.logger.info("Module versions: " + ", ".join(
-                    f"{k}={v}" for k, v in result.module_versions.items()))
+        version = self.host.bitrix_version(web_root)
+        result.bitrix_version = version
+        if version:
+            self.logger.success(f"Bitrix platform version: {version}")
+            result.add(LocalFinding(
+                severity='info', category='version',
+                title='Bitrix platform version',
+                detail=f'Exact installed version: {version}',
+                evidence=version))
+        for module in _MODULES_OF_INTEREST:
+            mv = self.host.bitrix_module_version(web_root, module)
+            if mv:
+                result.module_versions[module] = mv
+        if result.module_versions:
+            self.logger.info("Module versions: " + ", ".join(
+                f"{k}={v}" for k, v in result.module_versions.items()))
 
         # 3. CVE plugins' host-side confirmation.
         self._run_plugin_local_checks(result)
@@ -153,11 +159,11 @@ class BitrixLocalScanner:
                 evidence=outcome.evidence,
                 cve_id=plugin.cve_id))
             if outcome.confidence == 'confirmed' and outcome.detected:
-                self.logger.critical(f"CONFIRMED {plugin.cve_id}: {outcome.detail}")
+                self.logger.critical(f"CONFIRMED {outcome.detail}")
             elif outcome.confidence == 'not_affected':
                 self.logger.success(f"{plugin.cve_id}: not affected ({outcome.evidence})")
             else:
-                self.logger.warning(f"{plugin.cve_id}: {outcome.detail}")
+                self.logger.warning(outcome.detail)
 
     def _check_permissions(self, web_root: str, result: LocalResult):
         import os

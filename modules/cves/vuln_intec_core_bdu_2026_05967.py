@@ -73,7 +73,10 @@ class VULN_IntecCore_BDU_2026_05967(CVECheck):
             evidence=f'intec.core {ver}',
             detail=(f'{self.cve_id}: {"VULNERABLE" if vulnerable else "patched"} '
                     f'-- intec.core {ver} vs fixed 1.2.30. '
-                    + ('Update to >= 1.2.30 AND redeploy templates/remove backdoors.'
+                    + ('Unauthenticated RCE (CVSS 9.8, CWE-94), ACTIVELY EXPLOITED '
+                       'IN THE WILD (mass web-shell campaigns; ~12k sites per '
+                       'CyberOK/СКИПА). Update to >= 1.2.30, redeploy templates, '
+                       'remove backdoors, and check the DB for injected eval() code.'
                        if vulnerable else '')),
         )
 
@@ -97,9 +100,10 @@ class VULN_IntecCore_BDU_2026_05967(CVECheck):
             confidence='reachable',
             severity='high',
             evidence=body[:160],
-            detail=(f'{self.cve_id}: intec component-runner is EXPOSED (unauthenticated '
-                    'arbitrary IncludeComponent surface). Version not remotely visible '
-                    '-- confirm with local check / update intec.core to >= 1.2.30.'),
+            detail=(f'{self.cve_id}: intec component-runner is EXPOSED -- unauthenticated '
+                    'RCE surface (arbitrary IncludeComponent), CVSS 9.8, ACTIVELY '
+                    'EXPLOITED IN THE WILD. Version not remotely visible -- confirm '
+                    'with local check / update intec.core to >= 1.2.30.'),
         )
 
 
