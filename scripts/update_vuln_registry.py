@@ -18,15 +18,90 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 RSS_URL = 'https://www.1c-bitrix.ru/vul_dev/rss/'
+PAGE_URL = 'https://www.1c-bitrix.ru/vul_dev/'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RSS_SNAPSHOT = os.path.join(ROOT, 'data', 'vul_dev_rss.xml')
 JSON_OUT = os.path.join(ROOT, 'data', 'bitrix_vuln_modules.json')
+
+# Bitrix's own editions appear in the grid but are not third-party modules.
+_SKIP_CODES = {'1c', 'enterprise', 'eshop', 'business', 'start', 'standard'}
 
 
 def fetch(url: str) -> bytes:
     req = urllib.request.Request(url, headers={'User-Agent': 'creepytrix-vuln-registry/1.0'})
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.read()
+
+
+def parse_html(html_bytes):
+    """Parse the full vul_dev registry page (a Bitrix main-grid table).
+
+    The RSS carries only recent items; the HTML page has the complete list.
+    """
+    text = html_bytes.decode('utf-8', 'replace') if isinstance(html_bytes, bytes) else html_bytes
+    rows_out = []
+    for row in re.split(r'<tr class="main-grid-row main-grid-row-body"', text)[1:]:
+        mm = re.search(
+            r'data-column-id="vul_module".*?solutions/([a-z0-9._]+)/"[^>]*>(.*?)</a>',
+            row, re.S)
+        vm = re.search(r'data-column-id="vul_issue_version".*?до\s*([\d]+(?:\.[\d]+)+)', row, re.S)
+        if not mm or not vm:
+            continue
+        code = mm.group(1).lower()
+        if code in _SKIP_CODES:
+            continue
+        name = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', mm.group(2))).strip()
+        fixed = vm.group(1)
+        dm = re.search(r'data-column-id="vul_date_publication2".*?>\s*([\d]{2}\.[\d]{2}\.[\d]{4})', row, re.S)
+        lm = re.search(r'data-column-id="vul_mp_link".*?href="([^"]+)"', row, re.S)
+        rows_out.append({
+            'code': code,
+            'name': name,
+            'fixed': fixed,
+            'version_raw': 'до ' + fixed,
+            'published': dm.group(1) if dm else '',
+            'src_link': 'https://marketplace.1c-bitrix.ru/solutions/%s/' % code,
+            'fix_link': lm.group(1) if lm else '',
+        })
+    return rows_out
+
+
+def _vtuple(v):
+    out = []
+    for p in str(v).split('.'):
+        try:
+            out.append(int(p))
+        except ValueError:
+            out.append(0)
+    return tuple(out)
+
+
+def reduce_latest(rows):
+    """Keep, per module code, the row with the highest fixed version."""
+    by = {}
+    for m in rows:
+        c = m['code']
+        if c not in by or _vtuple(m['fixed']) > _vtuple(by[c]['fixed']):
+            by[c] = m
+    return sorted(by.values(), key=lambda x: x['code'])
+
+
+def collect_pages():
+    """Walk the grid's AJAX pagination until a page adds no new modules."""
+    page_tmpl = (PAGE_URL + '?internal=true&grid_id=vul_dev_grid'
+                 '&grid_action=pagination&vul_dev_grid=page-%d')
+    rows, seen = [], set()
+    for n in range(1, 20):  # safety cap; grid wraps after the last page
+        try:
+            page_rows = parse_html(fetch(page_tmpl % n))
+        except Exception:
+            break
+        fresh = [m for m in page_rows if m['code'] not in seen]
+        if not fresh:
+            break
+        rows.extend(page_rows)
+        seen.update(m['code'] for m in page_rows)
+    return rows
 
 
 def parse(xml_bytes: bytes):
