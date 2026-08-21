@@ -128,11 +128,12 @@ class BitrixLocalScanner:
         self._run_plugin_local_checks(result)
 
         # 3b. Data-driven marketplace-module version check (1C-Bitrix vul_dev).
-        self._check_vuln_modules(web_root, result)
+        checked_codes = self._check_vuln_modules(web_root, result)
 
-        # Print installed modules not already logged by _check_vuln_modules
+        # Print installed core modules not already evaluated by _check_vuln_modules
         for mod, ver in result.module_versions.items():
-            self.logger.info(f"Module version: {mod}={ver}")
+            if mod not in checked_codes:
+                self.logger.info(f"Module version: {mod}={ver}")
 
         # 4. Config-file permission hygiene (local-only visibility).
         if web_root:
@@ -152,12 +153,11 @@ class BitrixLocalScanner:
 
         return result
 
-    def _check_vuln_modules(self, web_root: str, result: LocalResult):
+    def _check_vuln_modules(self, web_root: str, result: LocalResult) -> set:
         """Flag installed marketplace modules older than their fixed version.
 
         Data-driven from data/bitrix_vuln_modules.json (synced from the
-        1C-Bitrix vul_dev registry). intec.core is skipped here -- it has a
-        dedicated plugin (BDU:2026-05967) with remote detection.
+        1C-Bitrix vul_dev registry).
         """
         import json
         import os
@@ -167,21 +167,22 @@ class BitrixLocalScanner:
                 registry = json.load(f)
         except Exception as e:
             self.logger.debug(f"vuln-module registry unavailable: {e}")
-            return
+            return set()
         mod_list = registry.get('modules', [])
-        covered_by_plugin = {'intec.core'}
         installed_count = 0
         vulnerable_count = 0
+        checked_codes = set()
 
         for mod in mod_list:
             code = mod.get('code')
             fixed = mod.get('fixed')
-            if not code or not fixed or code in covered_by_plugin:
+            if not code or not fixed:
                 continue
             installed = self.host.bitrix_module_version(web_root, code)
             if not installed:
                 continue
             installed_count += 1
+            checked_codes.add(code)
             result.module_versions[code] = installed
             name = mod.get('name', '')
             published = mod.get('published', '')
@@ -204,6 +205,7 @@ class BitrixLocalScanner:
                 self.logger.success(f"Checked vul_dev registry: {installed_count} marketplace module(s) installed, all up to date")
             else:
                 self.logger.info(f"Checked vul_dev registry ({len(mod_list)} rules): none installed on target")
+        return checked_codes
 
     def _run_plugin_local_checks(self, result: LocalResult):
         try:
