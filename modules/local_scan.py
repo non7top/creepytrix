@@ -107,13 +107,14 @@ class BitrixLocalScanner:
                     "common document roots). Point at it with --web-root PATH. "
                     "Aborting local scan.")
             return result
-        self.logger.success(f"Bitrix web root: {web_root}")
 
-        # 2. Exact versions (the headline of local mode).
+        # 2. Exact versions (the headline of local mode). The web root, platform
+        #    version and full module inventory are reported once, together, in
+        #    the results summary (print_local_results) rather than logged live
+        #    here -- that keeps the scan stream to findings/verdicts only.
         version = self.host.bitrix_version(web_root)
         result.bitrix_version = version
         if version:
-            self.logger.success(f"Bitrix platform version: {version}")
             result.add(LocalFinding(
                 severity='info', category='version',
                 title='Bitrix platform version',
@@ -130,13 +131,7 @@ class BitrixLocalScanner:
         # 3b. Data-driven marketplace-module version check (1C-Bitrix vul_dev).
         #     Skip modules a dedicated CVE plugin already reported (avoids
         #     double-flagging, e.g. intec.core via both BDU:2026-05967 and here).
-        checked_codes = self._check_vuln_modules(web_root, result, skip_codes=covered_codes)
-
-        # Print installed core modules not already evaluated above (neither by a
-        # CVE plugin nor by the registry check), so nothing is listed twice.
-        for mod, ver in result.module_versions.items():
-            if mod not in checked_codes and mod not in covered_codes:
-                self.logger.info(f"Module version: {mod}={ver}")
+        self._check_vuln_modules(web_root, result, skip_codes=covered_codes)
 
         # 4. Config-file permission hygiene (local-only visibility).
         if web_root:
@@ -204,9 +199,9 @@ class BitrixLocalScanner:
                     detail=f'{name} -- installed {installed}, fixed in {fixed} '
                            f'(1C-Bitrix vul_dev, {published}). Update it. {fix_link}',
                     evidence=f'{code} {installed}'))
-                self.logger.error(f"Module version: {code}={installed} [VULNERABLE: < {fixed}] ({name})")
-            else:
-                self.logger.success(f"Module version: {code}={installed} [OK: >= {fixed}] ({name})")
+                self.logger.error(f"Vulnerable module: {code}={installed} < fixed {fixed} ({name})")
+            # Patched modules aren't logged per-module (the version shows in the
+            # inventory; the aggregate line below confirms they're up to date).
 
         if vulnerable_count == 0:
             if installed_count > 0:

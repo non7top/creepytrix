@@ -459,12 +459,24 @@ def print_local_results(result: LocalResult, logger: ColoredLogger):
 
     summary = result.to_dict()['summary']
 
+    # Inventory (reported once, here -- the scanner no longer logs these live).
+    # Neutral facts use INFO (white); SUCCESS/green is reserved for "this is
+    # good/secure" verdicts, not for merely reporting a detected value.
+    if result.web_root:
+        logger.info(f"Web Root: {result.web_root}")
     logger.info(f"Distro Family: {result.distro}")
-    if not result.bitrix_version:
+
+    if result.bitrix_version:
+        logger.info(f"Bitrix Version (exact): {result.bitrix_version}")
+    else:
         logger.warning("Bitrix version not determined (check --web-root)")
 
-    # Severity scoreboard (counts only -- the findings themselves scrolled by
-    # above during the scan).
+    if result.module_versions:
+        logger.info("Module Versions:")
+        for name, ver in result.module_versions.items():
+            logger.info(f"  {name}: {ver}")
+
+    # Severity scoreboard (counts only -- each finding was logged live above).
     logger.info(
         f"Findings: {summary['total_findings']} total -- "
         f"critical {summary['critical']}, high {summary['high']}, "
