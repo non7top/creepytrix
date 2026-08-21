@@ -1,5 +1,7 @@
 {
   "source": "https://www.1c-bitrix.ru/vul_dev/rss/",
+  "version": 1,
+  "generated": "2026-08-21",
   "note": "Auto-generated from the 1C-Bitrix vul_dev registry by scripts/update_vuln_registry.py, plus curated withdrawn/unpublished modules from bitrix_vuln_modules_manual.json. A module is vulnerable when its installed version is < \"fixed\", or unconditionally when \"withdrawn\": true (removed from the marketplace -- no fix; remove it).",
   "modules": [
     {
