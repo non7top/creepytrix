@@ -123,15 +123,16 @@ class BitrixLocalScanner:
             mv = self.host.bitrix_module_version(web_root, module)
             if mv:
                 result.module_versions[module] = mv
-        if result.module_versions:
-            self.logger.info("Module versions: " + ", ".join(
-                f"{k}={v}" for k, v in result.module_versions.items()))
 
         # 3. CVE plugins' host-side confirmation.
         self._run_plugin_local_checks(result)
 
         # 3b. Data-driven marketplace-module version check (1C-Bitrix vul_dev).
         self._check_vuln_modules(web_root, result)
+
+        # Print installed modules not already logged by _check_vuln_modules
+        for mod, ver in result.module_versions.items():
+            self.logger.info(f"Module version: {mod}={ver}")
 
         # 4. Config-file permission hygiene (local-only visibility).
         if web_root:
@@ -168,9 +169,10 @@ class BitrixLocalScanner:
             self.logger.debug(f"vuln-module registry unavailable: {e}")
             return
         mod_list = registry.get('modules', [])
-        if mod_list:
-            self.logger.info(f"Checking installed modules against 1C-Bitrix vul_dev registry ({len(mod_list)} rules loaded)")
         covered_by_plugin = {'intec.core'}
+        installed_count = 0
+        vulnerable_count = 0
+
         for mod in mod_list:
             code = mod.get('code')
             fixed = mod.get('fixed')
@@ -179,17 +181,29 @@ class BitrixLocalScanner:
             installed = self.host.bitrix_module_version(web_root, code)
             if not installed:
                 continue
+            installed_count += 1
+            result.module_versions[code] = installed
+            name = mod.get('name', '')
+            published = mod.get('published', '')
+            fix_link = mod.get('fix_link', '')
+
             if self.host.version_tuple(installed) < self.host.version_tuple(fixed):
-                name = mod.get('name', '')
-                published = mod.get('published', '')
-                fix_link = mod.get('fix_link', '')
+                vulnerable_count += 1
                 result.add(LocalFinding(
                     severity='high', category='module',
                     title=f'Vulnerable module: {code} {installed} < {fixed}',
                     detail=f'{name} -- installed {installed}, fixed in {fixed} '
                            f'(1C-Bitrix vul_dev, {published}). Update it. {fix_link}',
                     evidence=f'{code} {installed}'))
-                self.logger.error(f"Vulnerable module: {code} {installed} < {fixed} ({name})")
+                self.logger.error(f"Module version: {code}={installed} [VULNERABLE: < {fixed}] ({name})")
+            else:
+                self.logger.success(f"Module version: {code}={installed} [OK: >= {fixed}] ({name})")
+
+        if vulnerable_count == 0:
+            if installed_count > 0:
+                self.logger.success(f"Checked vul_dev registry: {installed_count} marketplace module(s) installed, all up to date")
+            else:
+                self.logger.info(f"Checked vul_dev registry ({len(mod_list)} rules): none installed on target")
 
     def _run_plugin_local_checks(self, result: LocalResult):
         try:
