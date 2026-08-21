@@ -174,6 +174,27 @@ class LocalHost:
                 return m.group(1)
         return self.bitrix_module_version(web_root, 'main')
 
+    def bitrix_db_config(self, web_root: str):
+        """Read the default DB connection from bitrix/.settings.php via php.
+
+        Returns {host, database, login, password} or None. Uses the php CLI to
+        evaluate the config (reliable) rather than regex-parsing PHP.
+        """
+        settings = os.path.join(web_root, 'bitrix', '.settings.php')
+        if not os.path.exists(settings) or not self.has('php'):
+            return None
+        code = ('$c=(include %r)["connections"]["value"]["default"];'
+                'echo $c["host"]."\n".$c["database"]."\n".$c["login"]."\n".$c["password"];'
+                ) % settings
+        rc, out, _ = self.run(['php', '-r', code], timeout=15)
+        if rc != 0 or not out:
+            return None
+        parts = out.split('\n')
+        if len(parts) < 4:
+            return None
+        return {'host': parts[0] or 'localhost', 'database': parts[1],
+                'login': parts[2], 'password': parts[3]}
+
     @staticmethod
     def version_tuple(version: str) -> tuple:
         """Parse a dotted Bitrix version into an int tuple for comparison."""

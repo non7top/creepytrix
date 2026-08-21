@@ -114,6 +114,12 @@ Examples:
     )
 
     parser.add_argument(
+        '--db-scan',
+        action='store_true',
+        help='In --local mode, also scan the Bitrix DB (via mysqldump) for injected eval()/webshell code. DB restores are often skipped, so injected code survives a webroot restore.'
+    )
+
+    parser.add_argument(
         '--proxy',
         metavar='URL',
         help='HTTP/HTTPS proxy (e.g., http://127.0.0.1:8080)'
@@ -496,7 +502,7 @@ def main():
 
     # A filesystem path implies local mode: either --web-root, or a positional
     # argument that is a local path/directory rather than a URL.
-    if args.web_root:
+    if args.web_root or args.db_scan:
         args.local = True
     if args.target and (
         os.path.isdir(args.target)
@@ -558,7 +564,7 @@ def main():
         logger.info("STARTING LOCAL HOST SCAN")
         logger.info("=" * 60)
         try:
-            local_scanner = BitrixLocalScanner(logger, web_root=args.web_root)
+            local_scanner = BitrixLocalScanner(logger, web_root=args.web_root, db_scan=args.db_scan)
             local_result = local_scanner.scan(aggressive=args.aggressive)
             all_results['modules']['local'] = local_result.to_dict()
             print_local_results(local_result, logger)

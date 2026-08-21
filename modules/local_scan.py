@@ -81,9 +81,10 @@ class LocalResult:
 class BitrixLocalScanner:
     """Host-side Bitrix / web-server inspection."""
 
-    def __init__(self, logger, web_root: Optional[str] = None):
+    def __init__(self, logger, web_root: Optional[str] = None, db_scan: bool = False):
         self.logger = logger
         self.explicit_root = web_root
+        self.db_scan = db_scan
         self.host = LocalHost(logger)
 
     def scan(self, aggressive: bool = False) -> LocalResult:
@@ -133,6 +134,11 @@ class BitrixLocalScanner:
         if web_root:
             self._check_permissions(web_root, result)
 
+        # 5. Optional DB scan for injected eval() (--db-scan). DB restores are
+        #    commonly skipped, so injected code often survives a webroot restore.
+        if self.db_scan:
+            self._scan_database(web_root, result)
+
         return result
 
     def _run_plugin_local_checks(self, result: LocalResult):
@@ -164,6 +170,63 @@ class BitrixLocalScanner:
                 self.logger.success(f"{plugin.cve_id}: not affected ({outcome.evidence})")
             else:
                 self.logger.warning(outcome.detail)
+
+    def _scan_database(self, web_root: str, result: LocalResult):
+        import os
+        import subprocess
+        from utils.db_scan import scan_dump, known_eval_table
+
+        cfg = self.host.bitrix_db_config(web_root)
+        if not cfg:
+            self.logger.warning("DB scan skipped: could not read DB config (php/.settings.php).")
+            return
+        if not self.host.has('mysqldump'):
+            self.logger.warning("DB scan skipped: mysqldump not found.")
+            return
+
+        self.logger.info(f"Scanning database '{cfg['database']}' for injected eval()/webshell code...")
+        env = dict(os.environ, MYSQL_PWD=cfg['password'])
+        cmd = ['mysqldump', '--single-transaction', '--no-tablespaces',
+               '--skip-lock-tables', '--hex-blob',
+               '-h', cfg['host'] or 'localhost', '-u', cfg['login'], cfg['database']]
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL, env=env,
+                                    text=True, errors='replace', bufsize=1)
+        except Exception as e:
+            self.logger.warning(f"DB scan failed to start mysqldump: {e}")
+            return
+
+        per_table = {}
+        strong_shown = 0
+        for table, severity, snippet in scan_dump(iter(proc.stdout.readline, '')):
+            per_table.setdefault(table, {'critical': 0, 'high': 0})[severity] += 1
+            if severity == 'critical' and strong_shown < 20:
+                loc = ' [known code-exec table]' if known_eval_table(table) else ''
+                result.add(LocalFinding(
+                    severity='critical', category='db',
+                    title=f'Injected code in DB table {table}{loc}',
+                    detail=snippet, evidence=table))
+                self.logger.critical(f"DB INJECTION in {table}{loc}: {snippet[:120]}")
+                strong_shown += 1
+        proc.wait()
+
+        if not per_table:
+            self.logger.success("DB scan: no eval/webshell signatures found.")
+            return
+        for table, counts in sorted(per_table.items(), key=lambda x: -(x[1]['critical'] * 100 + x[1]['high'])):
+            loc = ' (known code-exec location)' if known_eval_table(table) else ''
+            self.logger.info(f"  DB signatures in {table}: "
+                             f"{counts['critical']} strong / {counts['high']} weak{loc}")
+        # Weak-only tables still warrant a single medium finding to review.
+        weak_tables = [t for t, c in per_table.items() if c['critical'] == 0 and c['high'] > 0]
+        if weak_tables:
+            result.add(LocalFinding(
+                severity='medium', category='db',
+                title='Weak eval/base64 signatures in DB (review)',
+                detail='Tables with weak signatures (may be legitimate): '
+                       + ', '.join(sorted(weak_tables)[:15]),
+                evidence=str(len(weak_tables)) + ' tables'))
 
     def _check_permissions(self, web_root: str, result: LocalResult):
         import os
