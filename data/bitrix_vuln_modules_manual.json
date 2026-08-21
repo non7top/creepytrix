@@ -1,0 +1,115 @@
+{
+  "note": "Curated entries the auto-sync CANNOT capture from the 1C-Bitrix vul_dev grid. These rows are listed WITHOUT a marketplace link because the module is unpublished / withdrawn ('снято с публикации'): the grid then carries neither the module code (directory id) nor a fixed version. A withdrawn module is vulnerable at ANY installed version and must be REMOVED -- there is no fixed version to update to. Slugs here were verified against archived marketplace titles (Wayback) and live 200/404 existence checks. Maintained by hand (by module code) and merged into bitrix_vuln_modules.json by scripts/update_vuln_registry.py (--merge-manual). Add an entry when the weekly sync reports an unmatched withdrawn row.",
+  "modules": [
+    {
+      "code": "sotbit.origami",
+      "name": "Сотбит: Оригами",
+      "partner": "Сотбит",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "17.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/sotbit.origami/",
+      "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
+    },
+    {
+      "code": "aspro.priority",
+      "name": "Аспро: Приорити",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.priority/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.digital",
+      "name": "Аспро: Digital",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.digital/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.ishop",
+      "name": "Аспро: Интернет-магазин",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.ishop/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.kshop",
+      "name": "Аспро: Крутой шоп",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.kshop/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.landscape",
+      "name": "Аспро: Ландшафт",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.landscape/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.medc2",
+      "name": "Аспро: Медицинский центр 2.0",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.medc2/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.resort",
+      "name": "Аспро: Курорт",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.resort/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.stroy",
+      "name": "Аспро: Стройка",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.stroy/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.tires",
+      "name": "Аспро: Шины и диски",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.tires/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    }
+  ]
+}

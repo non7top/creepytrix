@@ -65,7 +65,7 @@ class LocalResult:
                 'info': self._count('info'),
                 'confirmed_vulnerable': sum(
                     1 for f in self.findings
-                    if f.category == 'cve' and f.severity in ('critical', 'high')),
+                    if f.category in ('cve', 'module') and f.severity in ('critical', 'high')),
             },
             'all_findings': [f.to_dict() for f in self.findings],
         }
@@ -169,7 +169,9 @@ class BitrixLocalScanner:
         for mod in mod_list:
             code = mod.get('code')
             fixed = mod.get('fixed')
-            if not code or not fixed:
+            withdrawn = mod.get('withdrawn')
+            # A usable rule needs either a fixed version or a withdrawn flag.
+            if not code or (not fixed and not withdrawn):
                 continue
             installed = self.host.bitrix_module_version(web_root, code)
             if not installed:
@@ -188,7 +190,23 @@ class BitrixLocalScanner:
             published = mod.get('published', '')
             fix_link = mod.get('fix_link', '')
 
-            if self.host.version_tuple(installed) < self.host.version_tuple(fixed):
+            if withdrawn:
+                # Removed from the marketplace for security ("снято с публикации").
+                # No fixed version exists -> vulnerable at ANY installed version;
+                # the only remediation is to REMOVE the module. Flag it as such.
+                vulnerable_count += 1
+                result.add(LocalFinding(
+                    severity='critical', category='module',
+                    title=f'Withdrawn module installed: {code} {installed}',
+                    detail=f'{name} -- REMOVED from the 1C-Bitrix marketplace for '
+                           f'security ("снято с публикации", {published}). No fixed '
+                           f'version exists; REMOVE/uninstall it (do not just update). '
+                           f'Vendor advisory: {fix_link}',
+                    evidence=f'{code} {installed} (withdrawn)'))
+                self.logger.critical(
+                    f"Withdrawn module -- REMOVE it: {code}={installed} ({name}) "
+                    "[снято с публикации; no fix]")
+            elif self.host.version_tuple(installed) < self.host.version_tuple(fixed):
                 vulnerable_count += 1
                 result.add(LocalFinding(
                     severity='high', category='module',

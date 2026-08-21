@@ -58,6 +58,34 @@ class TestModuleCheck(unittest.TestCase):
         res = BitrixLocalScanner(_NullLog(), web_root=root).scan()
         self.assertFalse([f for f in res.findings if f.category == 'module'])
 
+    def test_flags_withdrawn_module_at_any_version(self):
+        # aspro.priority is 'снято с публикации' (withdrawn) -> flagged critical
+        # regardless of installed version; remediation is removal, not update.
+        root = self._root_with_module('aspro.priority', '99.99.99')
+        res = BitrixLocalScanner(_NullLog(), web_root=root).scan()
+        mods = [f for f in res.findings if f.category == 'module']
+        self.assertTrue(any('aspro.priority' in f.title and f.severity == 'critical'
+                            for f in mods))
+
+
+class TestReduceLatest(unittest.TestCase):
+    def test_withdrawn_supersedes_versioned(self):
+        rows = [
+            {'code': 'x.y', 'fixed': '1.0.0'},
+            {'code': 'x.y', 'fixed': None, 'withdrawn': True},
+        ]
+        out = upd.reduce_latest(rows)
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0].get('withdrawn'))
+
+    def test_keeps_highest_fixed(self):
+        rows = [
+            {'code': 'a.b', 'fixed': '1.2.0'},
+            {'code': 'a.b', 'fixed': '1.10.0'},
+        ]
+        out = upd.reduce_latest(rows)
+        self.assertEqual(out[0]['fixed'], '1.10.0')
+
 
 if __name__ == '__main__':
     unittest.main()

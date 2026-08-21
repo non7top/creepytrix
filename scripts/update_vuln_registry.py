@@ -22,6 +22,9 @@ PAGE_URL = 'https://www.1c-bitrix.ru/vul_dev/'
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RSS_SNAPSHOT = os.path.join(ROOT, 'data', 'vul_dev_rss.xml')
 JSON_OUT = os.path.join(ROOT, 'data', 'bitrix_vuln_modules.json')
+# Curated entries the grid can't yield (unpublished / withdrawn modules -- see
+# the file's own note). Always merged into the generated registry.
+MANUAL_IN = os.path.join(ROOT, 'data', 'bitrix_vuln_modules_manual.json')
 
 # Bitrix's own editions appear in the grid but are not third-party modules.
 _SKIP_CODES = {'1c', 'enterprise', 'eshop', 'business', 'start', 'standard'}
@@ -68,7 +71,7 @@ def parse_html(html_bytes):
 
 def _vtuple(v):
     out = []
-    for p in str(v).split('.'):
+    for p in str(v or '0').split('.'):
         try:
             out.append(int(p))
         except ValueError:
@@ -76,12 +79,35 @@ def _vtuple(v):
     return tuple(out)
 
 
+def load_manual():
+    """Curated entries (unpublished / withdrawn modules) merged into the
+    registry. See data/bitrix_vuln_modules_manual.json for why they can't be
+    scraped."""
+    try:
+        with open(MANUAL_IN, encoding='utf-8') as f:
+            return json.load(f).get('modules', [])
+    except Exception as e:
+        print(f"Warning: manual supplement unavailable: {e}", file=sys.stderr)
+        return []
+
+
 def reduce_latest(rows):
-    """Keep, per module code, the row with the highest fixed version."""
+    """Keep one row per module code. A withdrawn entry (no fixed version --
+    vulnerable at any installed version) always supersedes a versioned one;
+    otherwise keep the highest fixed version."""
     by = {}
     for m in rows:
-        c = m['code']
-        if c not in by or _vtuple(m['fixed']) > _vtuple(by[c]['fixed']):
+        c = m.get('code')
+        if not c:
+            continue
+        cur = by.get(c)
+        if cur is None:
+            by[c] = m
+        elif m.get('withdrawn'):
+            by[c] = m                     # withdrawn supersedes any version
+        elif cur.get('withdrawn'):
+            continue                      # keep the withdrawn entry
+        elif _vtuple(m.get('fixed')) > _vtuple(cur.get('fixed')):
             by[c] = m
     return sorted(by.values(), key=lambda x: x['code'])
 
@@ -127,7 +153,41 @@ def parse(xml_bytes: bytes):
     return mods
 
 
+def write_registry(mods):
+    payload = {
+        'source': RSS_URL,
+        'note': ('Auto-generated from the 1C-Bitrix vul_dev registry by '
+                 'scripts/update_vuln_registry.py, plus curated withdrawn/unpublished '
+                 'modules from bitrix_vuln_modules_manual.json. A module is vulnerable '
+                 'when its installed version is < "fixed", or unconditionally when '
+                 '"withdrawn": true (removed from the marketplace -- no fix; remove it).'),
+        'modules': mods,
+    }
+    os.makedirs(os.path.dirname(JSON_OUT), exist_ok=True)
+    with open(JSON_OUT, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+        f.write('\n')
+
+
+def load_existing():
+    try:
+        with open(JSON_OUT, encoding='utf-8') as f:
+            return json.load(f).get('modules', [])
+    except Exception:
+        return []
+
+
 def main(argv):
+    manual_mods = load_manual()
+
+    # Local, no-network mode: fold the curated manual entries into the EXISTING
+    # generated registry without re-fetching (keeps scraped entries intact).
+    if '--merge-manual' in argv:
+        mods = reduce_latest(load_existing() + manual_mods)
+        write_registry(mods)
+        print(f"{len(mods)} modules after manual merge -> {JSON_OUT}")
+        return 0
+
     if len(argv) > 1 and os.path.isfile(argv[1]):
         xml_bytes = open(argv[1], 'rb').read()
         page_rows = []
@@ -140,25 +200,16 @@ def main(argv):
             page_rows = []
 
     rss_mods = parse(xml_bytes)
-    mods = reduce_latest(rss_mods + page_rows)
-    os.makedirs(os.path.dirname(JSON_OUT), exist_ok=True)
+    mods = reduce_latest(rss_mods + page_rows + manual_mods)
     # Normalize the snapshot (LF endings, no trailing whitespace) so the
     # committed baseline and CI-written file compare cleanly -- avoids spurious
     # weekly diffs from server-side CRLF/trailing spaces.
     text = xml_bytes.decode('utf-8', 'replace')
     normalized = '\n'.join(line.rstrip() for line in text.splitlines()) + '\n'
+    os.makedirs(os.path.dirname(RSS_SNAPSHOT), exist_ok=True)
     with open(RSS_SNAPSHOT, 'w', encoding='utf-8', newline='\n') as f:
         f.write(normalized)
-    payload = {
-        'source': RSS_URL,
-        'note': ('Auto-generated from the 1C-Bitrix vul_dev RSS by '
-                 'scripts/update_vuln_registry.py. A module is vulnerable when its '
-                 'installed version is < "fixed".'),
-        'modules': mods,
-    }
-    with open(JSON_OUT, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-        f.write('\n')
+    write_registry(mods)
     print(f"{len(mods)} modules written to {JSON_OUT}")
     return 0
 

@@ -1,6 +1,6 @@
 {
   "source": "https://www.1c-bitrix.ru/vul_dev/rss/",
-  "note": "Auto-generated from the 1C-Bitrix vul_dev RSS by scripts/update_vuln_registry.py. A module is vulnerable when its installed version is < \"fixed\".",
+  "note": "Auto-generated from the 1C-Bitrix vul_dev registry by scripts/update_vuln_registry.py, plus curated withdrawn/unpublished modules from bitrix_vuln_modules_manual.json. A module is vulnerable when its installed version is < \"fixed\", or unconditionally when \"withdrawn\": true (removed from the marketplace -- no fix; remove it).",
   "modules": [
     {
       "code": "acrit.bonus",
@@ -102,6 +102,50 @@
       "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
     },
     {
+      "code": "aspro.digital",
+      "name": "Аспро: Digital",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.digital/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.ishop",
+      "name": "Аспро: Интернет-магазин",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.ishop/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.kshop",
+      "name": "Аспро: Крутой шоп",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.kshop/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.landscape",
+      "name": "Аспро: Ландшафт",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.landscape/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
       "code": "aspro.lite",
       "name": "Аспро: Лайтшоп",
       "fixed": "1.1.6",
@@ -117,6 +161,17 @@
       "version_raw": "до 2.1.9",
       "published": "06.02.2025",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.max/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.medc2",
+      "name": "Аспро: Медицинский центр 2.0",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.medc2/",
       "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
     },
     {
@@ -144,6 +199,50 @@
       "version_raw": "до 1.7.8",
       "published": "06.02.2025",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.optimus/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.priority",
+      "name": "Аспро: Приорити",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.priority/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.resort",
+      "name": "Аспро: Курорт",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.resort/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.stroy",
+      "name": "Аспро: Стройка",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.stroy/",
+      "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
+    },
+    {
+      "code": "aspro.tires",
+      "name": "Аспро: Шины и диски",
+      "partner": "Аспро",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "06.02.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/aspro.tires/",
       "fix_link": "https://aspro.ru/news/vzlomy-saytov-aspro/"
     },
     {
@@ -234,6 +333,17 @@
       "version_raw": "до 1.1.0",
       "published": "17.03.2025",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/sotbit.htmleditoraddition/",
+      "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
+    },
+    {
+      "code": "sotbit.origami",
+      "name": "Сотбит: Оригами",
+      "partner": "Сотбит",
+      "fixed": null,
+      "withdrawn": true,
+      "version_raw": "снято с публикации",
+      "published": "17.03.2025",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/sotbit.origami/",
       "fix_link": "https://www.sotbit.ru/info/module/1c-bitrix-security-patch.html"
     },
     {
