@@ -29,40 +29,8 @@ from modules.excel_rce import BitrixExcelRCEScanner, ExcelRCEResult
 from modules.api_scanner import BitrixAPIScanner, APIResult
 from modules.local_scan import BitrixLocalScanner, LocalResult
 from utils.requester import Requester
-from utils.logger import ColoredLogger
+from utils.logger import ColoredLogger, set_color_mode
 from utils.parser import BitrixParser
-
-
-# --- ANSI colored output ---------------------------------------------------
-# Plain ANSI escapes (no third-party dependency). Color is applied to the text
-# we hand the logger, so it works on Linux/macOS terminals even though colorama
-# is a Windows-only requirement. Suppressed when stdout is not a TTY or NO_COLOR
-# is set, keeping piped/redirected output and log files clean.
-_COLOR_ENABLED = sys.stdout.isatty() and os.environ.get('NO_COLOR') is None
-
-
-def _paint(code: str, text: str) -> str:
-    """Wrap text in an ANSI SGR code (and reset), or return it unchanged."""
-    return f"\033[{code}m{text}\033[0m" if _COLOR_ENABLED else text
-
-
-def red(text: str) -> str:        return _paint('31', text)
-def green(text: str) -> str:      return _paint('32', text)
-def yellow(text: str) -> str:     return _paint('33', text)
-def blue(text: str) -> str:       return _paint('34', text)
-def magenta(text: str) -> str:    return _paint('35', text)
-def cyan(text: str) -> str:       return _paint('36', text)
-def bold(text: str) -> str:       return _paint('1', text)
-def bold_red(text: str) -> str:   return _paint('1;31', text)
-def bold_green(text: str) -> str: return _paint('1;32', text)
-
-
-def section(logger: 'ColoredLogger', title: str, leading_newline: bool = False):
-    """Print a colored section-header block (rule / title / rule)."""
-    rule = cyan("=" * 60)
-    logger.info(("\n" if leading_newline else "") + rule)
-    logger.info(bold(cyan(title)))
-    logger.info(rule)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -152,6 +120,15 @@ Examples:
     )
 
     parser.add_argument(
+        '--color',
+        choices=['auto', 'always', 'never'],
+        default='auto',
+        help="Colored output: 'auto' (color only on a TTY; default), 'always' "
+             "(force color even when piped/redirected, e.g. through tee), "
+             "'never'. NO_COLOR/FORCE_COLOR env vars are honored in auto mode."
+    )
+
+    parser.add_argument(
         '--proxy',
         metavar='URL',
         help='HTTP/HTTPS proxy (e.g., http://127.0.0.1:8080)'
@@ -202,110 +179,123 @@ def print_banner(logger: ColoredLogger):
     Modules: Recon | Info Disclosure | Auth Bypass | SQLi | XSS | Upload | RCE | XXE/SSRF | 1C | Excel RCE | API
     Based on: https://pentestnotes.ru/notes/bitrix_pentest_full/
     """
-    logger.info(bold(cyan(banner)))
+    logger.info(banner)
 
 
 def print_recon_results(result: ReconResult, logger: ColoredLogger):
     """Print reconnaissance results"""
-    section(logger, "RECONNAISSANCE RESULTS")
+    logger.info("=" * 60)
+    logger.info("RECONNAISSANCE RESULTS")
+    logger.info("=" * 60)
 
-    logger.info(f"Target URL: {cyan(result.url)}")
-    detected = green('Yes') if result.bitrix_detected else red('No')
-    logger.info(f"Bitrix Detected: {detected}")
+    logger.info(f"Target URL: {result.url}")
+    logger.info(f"Bitrix Detected: {'Yes' if result.bitrix_detected else 'No'}")
 
     if not result.bitrix_detected:
         logger.warning("Bitrix CMS not detected on target")
         return
 
     if result.version:
-        logger.success(f"Version: {bold_green(result.version)}")
+        logger.success(f"Version: {result.version}")
 
     if result.edition:
-        logger.success(f"Edition: {bold_green(result.edition)}")
+        logger.success(f"Edition: {result.edition}")
 
     if result.admin_url:
-        logger.success(f"Admin Panel: {bold_green(result.admin_url)}")
+        logger.success(f"Admin Panel: {result.admin_url}")
 
 
 def print_disclosure_results(result: DisclosureResult, logger: ColoredLogger):
     """Print information disclosure results"""
-    section(logger, "INFORMATION DISCLOSURE RESULTS")
+    logger.info("=" * 60)
+    logger.info("INFORMATION DISCLOSURE RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
     if summary['high'] > 0:
-        logger.error(f"HIGH: {red(str(summary['high']))}")
+        logger.error(f"HIGH: {summary['high']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
 
 
 def print_auth_results(result: AuthResult, logger: ColoredLogger):
     """Print authentication testing results"""
-    section(logger, "AUTHENTICATION TEST RESULTS")
+    logger.info("=" * 60)
+    logger.info("AUTHENTICATION TEST RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
 
     if result.valid_credentials:
-        logger.critical("\n" + bold_red("!!! VALID CREDENTIALS FOUND !!!"))
+        logger.critical("\n!!! VALID CREDENTIALS FOUND !!!")
 
 
 def print_sqli_results(result: SQLiResult, logger: ColoredLogger):
     """Print SQL injection results"""
-    section(logger, "SQL INJECTION RESULTS")
+    logger.info("=" * 60)
+    logger.info("SQL INJECTION RESULTS")
+    logger.info("=" * 60)
 
     if result.dbms_detected:
-        logger.success(f"DBMS Detected: {bold_green(result.dbms_detected.upper())}")
+        logger.success(f"DBMS Detected: {result.dbms_detected.upper()}")
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
 
 
 def print_xss_results(result: XSSResult, logger: ColoredLogger):
     """Print XSS results"""
-    section(logger, "XSS SCAN RESULTS")
+    logger.info("=" * 60)
+    logger.info("XSS SCAN RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
     if summary['high'] > 0:
-        logger.error(f"HIGH: {red(str(summary['high']))}")
+        logger.error(f"HIGH: {summary['high']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
 
 
 def print_upload_results(result: UploadResult, logger: ColoredLogger):
     """Print file upload results"""
-    section(logger, "FILE UPLOAD SCAN RESULTS")
+    logger.info("=" * 60)
+    logger.info("FILE UPLOAD SCAN RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
 
 
 def print_rce_results(result: RCEResult, logger: ColoredLogger):
     """Print RCE results"""
-    section(logger, "RCE TEST RESULTS")
+    logger.info("=" * 60)
+    logger.info("RCE TEST RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
-        logger.critical(bold_red("!!! REMOTE CODE EXECUTION POSSIBLE !!!"))
+        logger.critical(f"CRITICAL: {summary['critical']}")
+        logger.critical("!!! REMOTE CODE EXECUTION POSSIBLE !!!")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
     logger.info(f"Command Injections: {summary['command_injections']}")
     logger.info(f"Code Evaluations: {summary['code_evaluations']}")
     logger.info(f"Deserializations: {summary['deserializations']}")
@@ -315,23 +305,25 @@ def print_rce_results(result: RCEResult, logger: ColoredLogger):
     # Print shell URLs
     shells = [f for f in result.findings if f.shell_url]
     if shells:
-        logger.critical("\n" + bold_red(f"!!! SHELLS AVAILABLE: {len(shells)} !!!"))
+        logger.critical(f"\n!!! SHELLS AVAILABLE: {len(shells)} !!!")
         for finding in shells:
-            logger.critical(f"  {red(finding.shell_url + chr(63) + 'cmd=whoami')}")
+            logger.critical(f"  {finding.shell_url}?cmd=whoami")
 
 
 def print_xxe_ssrf_results(result: XXESSRFResult, logger: ColoredLogger):
     """Print XXE/SSRF results"""
-    section(logger, "XXE/SSRF SCAN RESULTS")
+    logger.info("=" * 60)
+    logger.info("XXE/SSRF SCAN RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
     if summary['high'] > 0:
-        logger.error(f"HIGH: {red(str(summary['high']))}")
+        logger.error(f"HIGH: {summary['high']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
     logger.info(f"XXE Vulnerabilities: {summary['xxe']}")
     logger.info(f"SSRF Vulnerabilities: {summary['ssrf']}")
     logger.info(f"Blind XXE: {summary['blind_xxe']}")
@@ -340,21 +332,23 @@ def print_xxe_ssrf_results(result: XXESSRFResult, logger: ColoredLogger):
     if summary['internal_services_discovered'] > 0:
         logger.critical(f"\n!!! INTERNAL SERVICES DISCOVERED: {summary['internal_services_discovered']} !!!")
         for service in set(result.internal_services):
-            logger.critical(f"  - {red(service)}")
+            logger.critical(f"  - {service}")
 
 
 def print_integration_1c_results(result: Integration1CResult, logger: ColoredLogger):
     """Print 1C Integration results"""
-    section(logger, "1C INTEGRATION SCAN RESULTS")
+    logger.info("=" * 60)
+    logger.info("1C INTEGRATION SCAN RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
+        logger.critical(f"CRITICAL: {summary['critical']}")
     if summary['high'] > 0:
-        logger.error(f"HIGH: {red(str(summary['high']))}")
+        logger.error(f"HIGH: {summary['high']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
     logger.info(f"Exchange Vulnerabilities: {summary['exchange_vulns']}")
     logger.info(f"XML Vulnerabilities: {summary['xml_vulns']}")
     logger.info(f"Data Leaks: {summary['data_leaks']}")
@@ -363,7 +357,7 @@ def print_integration_1c_results(result: Integration1CResult, logger: ColoredLog
     if summary['exposed_endpoints'] > 0:
         logger.critical(f"\n!!! EXPOSED 1C ENDPOINTS: {summary['exposed_endpoints']} !!!")
         for endpoint in result.exposed_endpoints:
-            logger.critical(f"  - {red(endpoint)}")
+            logger.critical(f"  - {endpoint}")
 
     # Print exposed data details
     data_leaks = [f for f in result.findings if f.vuln_type == 'data_leak' and f.exposed_data]
@@ -376,17 +370,19 @@ def print_integration_1c_results(result: Integration1CResult, logger: ColoredLog
 
 def print_excel_rce_results(result: ExcelRCEResult, logger: ColoredLogger):
     """Print Excel RCE results"""
-    section(logger, "EXCEL RCE SCAN RESULTS")
+    logger.info("=" * 60)
+    logger.info("EXCEL RCE SCAN RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
-        logger.critical(bold_red("!!! EXCEL RCE VULNERABILITIES FOUND !!!"))
+        logger.critical(f"CRITICAL: {summary['critical']}")
+        logger.critical("!!! EXCEL RCE VULNERABILITIES FOUND !!!")
     if summary['high'] > 0:
-        logger.error(f"HIGH: {red(str(summary['high']))}")
+        logger.error(f"HIGH: {summary['high']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
     logger.info(f"Formula Injections: {summary['formula_injections']}")
     logger.info(f"DDE Injections: {summary['dde_injections']}")
     logger.info(f"CSV Injections: {summary['csv_injections']}")
@@ -401,24 +397,26 @@ def print_excel_rce_results(result: ExcelRCEResult, logger: ColoredLogger):
     # Print confirmed executions
     confirmed = [f for f in result.findings if f.execution_confirmed]
     if confirmed:
-        logger.critical("\n" + bold_red(f"!!! CONFIRMED CODE EXECUTION: {len(confirmed)} !!!"))
+        logger.critical(f"\n!!! CONFIRMED CODE EXECUTION: {len(confirmed)} !!!")
         for finding in confirmed:
-            logger.critical(f"  {red(finding.vuln_type)}: {finding.url}")
+            logger.critical(f"  {finding.vuln_type}: {finding.url}")
 
 
 def print_api_results(result: APIResult, logger: ColoredLogger):
     """Print API Scanner results"""
-    section(logger, "API SCANNER RESULTS")
+    logger.info("=" * 60)
+    logger.info("API SCANNER RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
     if summary['critical'] > 0:
-        logger.critical(f"CRITICAL: {bold_red(str(summary['critical']))}")
-        logger.critical(bold_red("!!! CRITICAL API VULNERABILITIES FOUND !!!"))
+        logger.critical(f"CRITICAL: {summary['critical']}")
+        logger.critical("!!! CRITICAL API VULNERABILITIES FOUND !!!")
     if summary['high'] > 0:
-        logger.error(f"HIGH: {red(str(summary['high']))}")
+        logger.error(f"HIGH: {summary['high']}")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
     logger.info(f"Authentication Issues: {summary['auth_issues']}")
     logger.info(f"IDOR Vulnerabilities: {summary['idor_vulns']}")
     logger.info(f"Injection Vulnerabilities: {summary['injection_vulns']}")
@@ -434,9 +432,9 @@ def print_api_results(result: APIResult, logger: ColoredLogger):
     # Print unauthenticated endpoints
     auth_bypass = [f for f in result.findings if f.vuln_type == 'auth_bypass']
     if auth_bypass:
-        logger.critical("\n" + bold_red(f"!!! UNPROTECTED API ENDPOINTS: {len(auth_bypass)} !!!"))
+        logger.critical(f"\n!!! UNPROTECTED API ENDPOINTS: {len(auth_bypass)} !!!")
         for finding in auth_bypass[:5]:  # Show first 5
-            logger.critical(f"  {red(finding.method)} {finding.url}")
+            logger.critical(f"  {finding.method} {finding.url}")
 
     # Print JWT issues
     jwt_issues = [f for f in result.findings if 'jwt' in f.description.lower() or 'JWT' in str(f.payload)]
@@ -448,7 +446,9 @@ def print_api_results(result: APIResult, logger: ColoredLogger):
 
 def print_local_results(result: LocalResult, logger: ColoredLogger):
     """Print local host scan results"""
-    section(logger, "LOCAL HOST SCAN RESULTS")
+    logger.info("=" * 60)
+    logger.info("LOCAL HOST SCAN RESULTS")
+    logger.info("=" * 60)
 
     summary = result.to_dict()['summary']
 
@@ -457,7 +457,7 @@ def print_local_results(result: LocalResult, logger: ColoredLogger):
     logger.info(f"Distro Family: {result.distro}")
 
     if result.bitrix_version:
-        logger.success(f"Bitrix Version (exact): {bold_green(result.bitrix_version)}")
+        logger.success(f"Bitrix Version (exact): {result.bitrix_version}")
     else:
         logger.warning("Bitrix version not determined (check --web-root)")
 
@@ -467,22 +467,14 @@ def print_local_results(result: LocalResult, logger: ColoredLogger):
             logger.info(f"  {name}: {ver}")
 
     if summary['confirmed_vulnerable'] > 0:
-        logger.critical("\n" + bold_red(f"!!! CONFIRMED VULNERABLE: {summary['confirmed_vulnerable']} !!!"))
+        logger.critical(f"\n!!! CONFIRMED VULNERABLE: {summary['confirmed_vulnerable']} !!!")
 
-    logger.info(f"\nTotal Findings: {bold(str(summary['total_findings']))}")
+    logger.info(f"\nTotal Findings: {summary['total_findings']}")
     for finding in result.findings:
-        sev = finding.severity.upper()
-        # Color the severity tag: critical/high -> red, medium -> yellow, else green.
-        if sev in ('CRITICAL', 'HIGH'):
-            tag = bold_red(f"[{sev}]")
-        elif sev == 'MEDIUM':
-            tag = yellow(f"[{sev}]")
-        else:
-            tag = green(f"[{sev}]")
         if finding.category == 'cve':
-            logger.info(f"  {tag} {finding.title}: {finding.detail}")
+            logger.info(f"  [{finding.severity.upper()}] {finding.title}: {finding.detail}")
         elif finding.category == 'permission':
-            logger.warning(f"  {tag} {finding.title}")
+            logger.warning(f"  [{finding.severity.upper()}] {finding.title}")
 
 
 def save_results(results: dict, output_file: str, logger: ColoredLogger) -> bool:
@@ -500,6 +492,9 @@ def main():
     """Main entry point"""
     parser = create_parser()
     args = parser.parse_args()
+
+    # Color mode must be set before the first log line (the banner).
+    set_color_mode(args.color)
 
     # Setup logger
     if args.quiet:
@@ -549,11 +544,11 @@ def main():
 
     # Warning for destructive modules
     if args.module in ['rce', 'xxe_ssrf', '1c', 'excel', 'api'] or (args.module == 'all' and args.aggressive):
-        logger.warning(yellow("=" * 60))
-        logger.warning(bold(yellow("WARNING: Destructive modules enabled!")))
-        logger.warning(yellow("RCE, XXE/SSRF, 1C Integration, Excel RCE and API tests can be dangerous!"))
-        logger.warning(yellow("Only test systems you have permission to test!"))
-        logger.warning(yellow("=" * 60))
+        logger.warning("=" * 60)
+        logger.warning("WARNING: Destructive modules enabled!")
+        logger.warning("RCE, XXE/SSRF, 1C Integration, Excel RCE and API tests can be dangerous!")
+        logger.warning("Only test systems you have permission to test!")
+        logger.warning("=" * 60)
 
     # Initialize components
     try:
@@ -577,7 +572,9 @@ def main():
 
     # LOCAL MODE -- host inspection, no network required. Runs first.
     if args.local:
-        section(logger, "STARTING LOCAL HOST SCAN", leading_newline=True)
+        logger.info("\n" + "=" * 60)
+        logger.info("STARTING LOCAL HOST SCAN")
+        logger.info("=" * 60)
         try:
             local_scanner = BitrixLocalScanner(logger, web_root=args.web_root, db_scan=args.db_scan)
             local_result = local_scanner.scan(aggressive=args.aggressive)
@@ -591,7 +588,9 @@ def main():
 
     # Without a target URL there are no remote modules to run.
     if not target:
-        section(logger, "LOCAL SCAN COMPLETED (no target URL -- skipping remote modules)", leading_newline=True)
+        logger.info("\n" + "=" * 60)
+        logger.info("LOCAL SCAN COMPLETED (no target URL -- skipping remote modules)")
+        logger.info("=" * 60)
         crit = sum(m.get('summary', {}).get('critical', 0)
                    for m in all_results['modules'].values())
         if args.output and save_results(all_results, args.output, logger):
@@ -602,7 +601,9 @@ def main():
     try:
         # RECON Module
         if args.module in ['all', 'recon']:
-            section(logger, "STARTING RECONNAISSANCE MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING RECONNAISSANCE MODULE")
+            logger.info("=" * 60)
 
             recon = BitrixRecon(requester, logger)
             recon_result = recon.scan(target, aggressive=args.aggressive)
@@ -611,7 +612,9 @@ def main():
 
         # INFO DISCLOSURE Module
         if args.module in ['all', 'disclosure']:
-            section(logger, "STARTING INFORMATION DISCLOSURE MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING INFORMATION DISCLOSURE MODULE")
+            logger.info("=" * 60)
 
             disclosure = BitrixInfoDisclosure(requester, logger, parser)
             disc_result = disclosure.scan(target, aggressive=args.aggressive)
@@ -620,7 +623,9 @@ def main():
 
         # AUTH BYPASS Module
         if args.module in ['all', 'auth']:
-            section(logger, "STARTING AUTHENTICATION BYPASS MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING AUTHENTICATION BYPASS MODULE")
+            logger.info("=" * 60)
 
             auth = BitrixAuthBypass(requester, logger, parser)
             auth_result = auth.scan(target, aggressive=args.aggressive)
@@ -629,7 +634,9 @@ def main():
 
         # SQL INJECTION Module
         if args.module in ['all', 'sqli']:
-            section(logger, "STARTING SQL INJECTION SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING SQL INJECTION SCANNER MODULE")
+            logger.info("=" * 60)
 
             sqli = BitrixSQLiScanner(requester, logger, parser)
             sqli_result = sqli.scan(target, aggressive=args.aggressive)
@@ -638,7 +645,9 @@ def main():
 
         # XSS Module
         if args.module in ['all', 'xss']:
-            section(logger, "STARTING XSS SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING XSS SCANNER MODULE")
+            logger.info("=" * 60)
 
             xss = BitrixXSSScanner(requester, logger, parser)
             xss_result = xss.scan(target, aggressive=args.aggressive)
@@ -647,7 +656,9 @@ def main():
 
         # FILE UPLOAD Module
         if args.module in ['all', 'upload']:
-            section(logger, "STARTING FILE UPLOAD SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING FILE UPLOAD SCANNER MODULE")
+            logger.info("=" * 60)
 
             upload = BitrixFileUploadScanner(requester, logger, parser)
             upload_result = upload.scan(target, aggressive=args.aggressive)
@@ -656,7 +667,9 @@ def main():
 
         # RCE Module
         if args.module in ['all', 'rce']:
-            section(logger, "STARTING RCE TESTER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING RCE TESTER MODULE")
+            logger.info("=" * 60)
 
             rce = BitrixRCETester(requester, logger, parser)
             rce_result = rce.scan(target, aggressive=args.aggressive)
@@ -665,7 +678,9 @@ def main():
 
         # XXE/SSRF Module
         if args.module in ['all', 'xxe_ssrf']:
-            section(logger, "STARTING XXE/SSRF SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING XXE/SSRF SCANNER MODULE")
+            logger.info("=" * 60)
 
             xxe_ssrf = BitrixXXESSRFScanner(requester, logger, parser)
 
@@ -680,7 +695,9 @@ def main():
 
         # 1C Integration Module
         if args.module in ['all', '1c']:
-            section(logger, "STARTING 1C INTEGRATION SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING 1C INTEGRATION SCANNER MODULE")
+            logger.info("=" * 60)
 
             integration_1c = Bitrix1CIntegrationScanner(requester, logger, parser)
             integration_1c_result = integration_1c.scan(target, aggressive=args.aggressive)
@@ -689,7 +706,9 @@ def main():
 
         # Excel RCE Module
         if args.module in ['all', 'excel']:
-            section(logger, "STARTING EXCEL RCE SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING EXCEL RCE SCANNER MODULE")
+            logger.info("=" * 60)
 
             excel_rce = BitrixExcelRCEScanner(requester, logger, parser)
 
@@ -704,7 +723,9 @@ def main():
 
         # API Scanner Module
         if args.module in ['all', 'api']:
-            section(logger, "STARTING API SCANNER MODULE", leading_newline=True)
+            logger.info("\n" + "=" * 60)
+            logger.info("STARTING API SCANNER MODULE")
+            logger.info("=" * 60)
 
             api_scanner = BitrixAPIScanner(requester, logger, parser)
             api_result = api_scanner.scan(target, aggressive=args.aggressive)
@@ -712,7 +733,9 @@ def main():
             print_api_results(api_result, logger)
 
         # Final summary
-        section(logger, "SCAN COMPLETED", leading_newline=True)
+        logger.info("\n" + "=" * 60)
+        logger.info("SCAN COMPLETED")
+        logger.info("=" * 60)
 
         # Calculate totals
         total_findings = 0
@@ -724,12 +747,12 @@ def main():
                 critical_count += module_data['summary'].get('critical', 0)
 
         if critical_count > 0:
-            logger.critical(f"Found {bold_red(str(critical_count))} CRITICAL issues!")
-            logger.critical(bold_red("Immediate action required!"))
+            logger.critical(f"Found {critical_count} CRITICAL issues!")
+            logger.critical("Immediate action required!")
         elif total_findings > 0:
-            logger.warning(f"Found {yellow(str(total_findings))} potential issues")
+            logger.warning(f"Found {total_findings} potential issues")
         else:
-            logger.success(green("No obvious security issues found"))
+            logger.success("No obvious security issues found")
 
         # Save results
         if args.output:

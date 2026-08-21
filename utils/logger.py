@@ -5,28 +5,65 @@ Custom logger with colored output for terminal and file logging
 """
 
 import logging
+import os
 import sys
 from datetime import datetime
 from typing import Optional
 
 try:
+    # colorama is only needed on legacy Windows consoles (it translates ANSI
+    # to Win32 calls). If present we use it; otherwise we emit raw ANSI escapes,
+    # which every Linux/macOS terminal -- and modern Windows Terminal -- render
+    # natively. No hard dependency either way.
     from colorama import init, Fore, Style
     init(autoreset=True)
     COLORAMA_AVAILABLE = True
 except ImportError:
     COLORAMA_AVAILABLE = False
-    # Fallback if colorama not installed
+    # Fallback: real ANSI SGR codes (colorama absent). Previously these were
+    # empty strings, which is why output came out monochrome on Linux/macOS.
     class Fore:
-        CYAN = ''
-        BLUE = ''
-        WHITE = ''
-        YELLOW = ''
-        RED = ''
-        GREEN = ''
-        MAGENTA = ''
+        BLACK = '\033[30m'
+        RED = '\033[31m'
+        GREEN = '\033[32m'
+        YELLOW = '\033[33m'
+        BLUE = '\033[34m'
+        MAGENTA = '\033[35m'
+        CYAN = '\033[36m'
+        WHITE = '\033[37m'
     class Style:
-        BRIGHT = ''
-        RESET_ALL = ''
+        BRIGHT = '\033[1m'
+        RESET_ALL = '\033[0m'
+
+
+# --- color mode ------------------------------------------------------------
+# 'auto' -> color only when stdout is a TTY (and NO_COLOR unset); 'always' and
+# 'never' force it on/off. --color wires this via set_color_mode(). Read at emit
+# time so a mode set before the first log line takes effect immediately.
+_COLOR_MODE = 'auto'
+
+
+def set_color_mode(mode: str) -> None:
+    """Set global color mode: 'auto' | 'always' | 'never'."""
+    global _COLOR_MODE
+    _COLOR_MODE = mode
+
+
+def color_enabled() -> bool:
+    """Whether ANSI color should be emitted right now."""
+    if _COLOR_MODE == 'always':
+        return True
+    if _COLOR_MODE == 'never':
+        return False
+    # auto
+    if os.environ.get('NO_COLOR') is not None:
+        return False
+    if os.environ.get('FORCE_COLOR') is not None:
+        return True
+    try:
+        return bool(sys.stdout.isatty())
+    except Exception:
+        return False
 
 
 class ColoredFormatter(logging.Formatter):
@@ -43,7 +80,7 @@ class ColoredFormatter(logging.Formatter):
 
     def __init__(self, use_colors: bool = True):
         super().__init__()
-        self.use_colors = use_colors and COLORAMA_AVAILABLE
+        self.use_colors = use_colors
 
     def format(self, record: logging.LogRecord) -> str:
         # Handle custom SUCCESS level
@@ -51,9 +88,9 @@ class ColoredFormatter(logging.Formatter):
             record.levelname = 'INFO'
 
         # Get color for level
-        if self.use_colors:
+        if self.use_colors and color_enabled():
             color = self.COLORS.get(record.levelname, Fore.WHITE)
-            reset = Style.RESET_ALL if COLORAMA_AVAILABLE else ''
+            reset = Style.RESET_ALL
         else:
             color = ''
             reset = ''
@@ -90,7 +127,9 @@ class ColoredLogger:
         """
         self.name = name
         self.level = level
-        self.use_colors = use_colors and COLORAMA_AVAILABLE
+        # Native ANSI works without colorama; color_enabled() decides at emit
+        # time whether to actually paint (TTY / --color / NO_COLOR).
+        self.use_colors = use_colors
         self.log_file = log_file
 
         # Add custom SUCCESS level if not exists
@@ -131,24 +170,33 @@ class ColoredLogger:
             message: Message to log
             std_level: Standard logging level for file
         """
-        # Console output with colors
-        if self.use_colors:
+        # Console output with colors (whole line colored by severity:
+        # critical/error -> red, success -> green, warning -> yellow).
+        if self.use_colors and color_enabled():
             colors = {
-                'DEBUG': Fore.CYAN,
+                'DEBUG': Fore.BLUE,
                 'INFO': Fore.WHITE,
                 'WARNING': Fore.YELLOW,
                 'ERROR': Fore.RED,
                 'SUCCESS': Fore.GREEN,
-                'CRITICAL': Fore.MAGENTA + Style.BRIGHT,
+                'CRITICAL': Fore.RED + Style.BRIGHT,   # critical -> bright red
             }
             color = colors.get(level, Fore.WHITE)
-            reset = Style.RESET_ALL if COLORAMA_AVAILABLE else ''
+            reset = Style.RESET_ALL
         else:
             color = ''
             reset = ''
 
+        # Keep the [time] [LEVEL] prefix attached to the text: any leading
+        # newlines in the message become real blank lines emitted BEFORE the
+        # prefix, instead of stranding the prefix on its own line above an
+        # unprefixed remainder.
+        lead = len(message) - len(message.lstrip('\n'))
+        blanks = '\n' * lead
+        body = message[lead:]
+
         timestamp = datetime.now().strftime('%H:%M:%S')
-        print(f"{color}[{timestamp}] [{level}] {message}{reset}")
+        print(f"{blanks}{color}[{timestamp}] [{level}] {body}{reset}")
 
         # File logging
         if self.file_logger:
