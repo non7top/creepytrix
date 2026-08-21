@@ -163,6 +163,35 @@ class LocalHost:
                     return m.group(1)
         return None
 
+    def list_installed_modules(self, web_root: str) -> dict:
+        """Every installed module and its version, discovered by scanning both
+        module trees: local/modules (custom/overriding) and bitrix/modules.
+
+        Returns an ordered {code: version} dict sorted by code. A module code
+        may contain a dot (e.g. 'intec.core'). local/ overrides bitrix/ when a
+        module exists in both. Modules with no readable version.php are omitted.
+        """
+        codes = set()
+        for base in ('bitrix', 'local'):
+            moddir = os.path.join(web_root, base, 'modules')
+            if not os.path.isdir(moddir):
+                continue
+            try:
+                entries = os.listdir(moddir)
+            except OSError:
+                continue
+            for name in entries:
+                if name.startswith('.'):
+                    continue
+                if os.path.isdir(os.path.join(moddir, name)):
+                    codes.add(name)
+        modules = {}
+        for code in sorted(codes):
+            ver = self.bitrix_module_version(web_root, code)  # local-first
+            if ver:
+                modules[code] = ver
+        return modules
+
     def bitrix_version(self, web_root: str) -> Optional[str]:
         """Platform (main module) version -- the exact SM_VERSION."""
         # Prefer the canonical SM_VERSION define, fall back to the main module.

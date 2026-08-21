@@ -15,13 +15,6 @@ from typing import Dict, List, Optional, Any
 
 from utils.localhost import LocalHost
 
-# Bitrix modules worth reporting the exact version of when present.
-_MODULES_OF_INTEREST = [
-    'main', 'vote', 'translate', 'sale', 'catalog', 'iblock',
-    'crm', 'socialnetwork', 'security', 'bitrix24',
-    'intec.core', 'intec.universe', 'intec.garderob', 'intec.startshop',
-]
-
 # Sensitive config files that must not be world-readable / web-exposed.
 _SENSITIVE_FILES = [
     'bitrix/.settings.php',
@@ -120,10 +113,8 @@ class BitrixLocalScanner:
                 title='Bitrix platform version',
                 detail=f'Exact installed version: {version}',
                 evidence=version))
-        for module in _MODULES_OF_INTEREST:
-            mv = self.host.bitrix_module_version(web_root, module)
-            if mv:
-                result.module_versions[module] = mv
+        # Full inventory of every installed module (not a curated subset).
+        result.module_versions = self.host.list_installed_modules(web_root)
 
         # 3. CVE plugins' host-side confirmation.
         covered_codes = self._run_plugin_local_checks(result)
@@ -170,7 +161,8 @@ class BitrixLocalScanner:
             self.logger.debug(f"vuln-module registry unavailable: {e}")
             return set()
         mod_list = registry.get('modules', [])
-        installed_count = 0
+        installed_count = 0      # registry modules installed AND evaluated here
+        covered_count = 0        # installed, but a dedicated CVE plugin owns them
         vulnerable_count = 0
         checked_codes = set()
 
@@ -179,14 +171,19 @@ class BitrixLocalScanner:
             fixed = mod.get('fixed')
             if not code or not fixed:
                 continue
-            if code in skip_codes:
-                continue  # already covered by a dedicated CVE plugin
             installed = self.host.bitrix_module_version(web_root, code)
             if not installed:
                 continue
-            installed_count += 1
-            checked_codes.add(code)
+            # Record the version for the inventory regardless of who evaluates it.
             result.module_versions[code] = installed
+            checked_codes.add(code)
+            if code in skip_codes:
+                # Installed, but a dedicated CVE plugin already reported its
+                # verdict above -- count it so we don't claim "none installed",
+                # but don't add a second finding.
+                covered_count += 1
+                continue
+            installed_count += 1
             name = mod.get('name', '')
             published = mod.get('published', '')
             fix_link = mod.get('fix_link', '')
@@ -203,11 +200,25 @@ class BitrixLocalScanner:
             # Patched modules aren't logged per-module (the version shows in the
             # inventory; the aggregate line below confirms they're up to date).
 
-        if vulnerable_count == 0:
-            if installed_count > 0:
-                self.logger.success(f"Checked vul_dev registry: {installed_count} marketplace module(s) installed, all up to date")
-            else:
-                self.logger.info(f"Checked vul_dev registry ({len(mod_list)} rules): none installed on target")
+        # Aggregate line -- accurate about modules covered by a CVE plugin so we
+        # never report a vulnerable-but-covered module (e.g. intec.core) as
+        # "none installed".
+        covered_note = (f" (+{covered_count} covered by CVE checks above)"
+                        if covered_count else "")
+        if vulnerable_count > 0:
+            pass  # per-module VULNERABLE lines already logged above
+        elif installed_count > 0:
+            self.logger.success(
+                f"Checked vul_dev registry: {installed_count} marketplace "
+                f"module(s) up to date{covered_note}")
+        elif covered_count > 0:
+            self.logger.info(
+                f"Checked vul_dev registry: {covered_count} installed module(s) "
+                "handled by dedicated CVE checks above")
+        else:
+            self.logger.info(
+                f"Checked vul_dev registry ({len(mod_list)} rules): "
+                "none installed on target")
         return checked_codes
 
     def _run_plugin_local_checks(self, result: LocalResult) -> set:
