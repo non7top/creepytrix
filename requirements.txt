@@ -14,7 +14,7 @@ PyJWT>=2.13.0
 cryptography>=50.0.0
 
 # XML Processing (for XXE/SSRF and 1C modules)
-lxml>=6.1.1
+lxml>=6.1.2
 defusedxml>=0.7.1
 
 # HTML Parsing (for XSS and Info Disclosure)
