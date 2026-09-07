@@ -2,8 +2,18 @@
 <channel>
 <title>Реестр решений сторонних разработчиков с выявленными уязвимостями</title>
 <link>https://www.1c-bitrix.ru</link>
-<lastBuildDate>Mon, 24 Aug 2026 10:19:27 +0300</lastBuildDate>
+<lastBuildDate>Mon, 07 Sep 2026 15:29:06 +0300</lastBuildDate>
 <ttl>60</ttl>
+<item>
+	<title>КОМТЕТ Касса Курьер</title>
+	<link>https://www.1c-bitrix.ru/vul_dev/</link>
+	<description></description>
+		<code>komtet.delivery?update_sys=Y#tab-about-link</code>
+	<src_link>https://marketplace.1c-bitrix.ru/solutions/komtet.delivery/?update_sys=Y#tab-about-link</src_link>
+		<fix_link>https://kassa.komtet.ru/blog/obnovleniye-bezopasnosti-plagina-komtet-kassa-kuryer-v-is-bitriks</fix_link>
+	<version>до 2.8.1</version>
+	<pubDate>26.08.2026</pubDate>
+</item>
 <item>
 	<title>Универсальный импорт</title>
 	<link>https://www.1c-bitrix.ru/vul_dev/</link>

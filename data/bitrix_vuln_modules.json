@@ -1,7 +1,7 @@
 {
   "source": "https://www.1c-bitrix.ru/vul_dev/rss/",
-  "version": 2,
-  "generated": "2026-08-24",
+  "version": 3,
+  "generated": "2026-09-07",
   "note": "Auto-generated from the 1C-Bitrix vul_dev registry by scripts/update_vuln_registry.py, plus curated withdrawn/unpublished modules from bitrix_vuln_modules_manual.json. A module is vulnerable when its installed version is < \"fixed\", or unconditionally when \"withdrawn\": true (removed from the marketplace -- no fix; remove it).",
   "modules": [
     {
@@ -318,6 +318,24 @@
       "published": "30.12.2025",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/kda.importexcel/",
       "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
+    },
+    {
+      "code": "komtet.delivery",
+      "name": "КОМТЕТ Касса Курьер",
+      "fixed": "2.8.1",
+      "version_raw": "до 2.8.1",
+      "published": "26.08.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/komtet.delivery/",
+      "fix_link": "https://kassa.komtet.ru/blog/obnovleniye-bezopasnosti-plagina-komtet-kassa-kuryer-v-is-bitriks"
+    },
+    {
+      "code": "komtet.delivery?update_sys=Y#tab-about-link",
+      "name": "КОМТЕТ Касса Курьер",
+      "fixed": "2.8.1",
+      "version_raw": "до 2.8.1",
+      "published": "26.08.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/komtet.delivery/?update_sys=Y#tab-about-link",
+      "fix_link": "https://kassa.komtet.ru/blog/obnovleniye-bezopasnosti-plagina-komtet-kassa-kuryer-v-is-bitriks"
     },
     {
       "code": "shs.parser",
