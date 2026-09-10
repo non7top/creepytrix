@@ -34,6 +34,19 @@ class TestParser(unittest.TestCase):
         self.assertEqual(mods[0]['fixed'], '1.79.0')
         self.assertEqual(mods[0]['version_raw'], 'до 1.79.0')
 
+    def test_sanitizes_polluted_rss_code(self):
+        # Observed in the wild: <code> carrying a URL query + fragment.
+        rss = (b'<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel>'
+               b'<item><title>Komtet</title>'
+               b'<code>komtet.delivery?update_sys=Y#tab-about-link</code>'
+               b'<version>\xd0\xb4\xd0\xbe 2.8.1</version>'
+               b'<src_link>https://marketplace.1c-bitrix.ru/solutions/komtet.delivery/?x=1</src_link>'
+               b'</item></channel></rss>')
+        mods = upd.parse(rss)
+        self.assertEqual(len(mods), 1)
+        self.assertEqual(mods[0]['code'], 'komtet.delivery')  # query/fragment stripped
+        self.assertEqual(mods[0]['fixed'], '2.8.1')
+
 
 class TestModuleCheck(unittest.TestCase):
     def _root_with_module(self, code, version):
@@ -139,6 +152,17 @@ class TestReduceLatest(unittest.TestCase):
         ]
         out = upd.reduce_latest(rows)
         self.assertEqual(out[0]['fixed'], '1.10.0')
+
+    def test_drops_malformed_codes(self):
+        # Garbage guard: only clean [a-z0-9._]+ codes survive.
+        rows = [
+            {'code': 'ok.mod', 'fixed': '1.0.0'},
+            {'code': 'komtet.delivery?update_sys=Y#tab-about-link', 'fixed': '2.8.1'},
+            {'code': 'UPPER.case', 'fixed': '1.0.0'},
+            {'code': '', 'fixed': '1.0.0'},
+        ]
+        out = upd.reduce_latest(rows)
+        self.assertEqual([m['code'] for m in out], ['ok.mod'])
 
 
 if __name__ == '__main__':
