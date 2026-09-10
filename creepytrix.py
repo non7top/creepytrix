@@ -29,7 +29,7 @@ from modules.excel_rce import BitrixExcelRCEScanner, ExcelRCEResult
 from modules.api_scanner import BitrixAPIScanner, APIResult
 from modules.local_scan import BitrixLocalScanner, LocalResult
 from utils.requester import Requester
-from utils.logger import ColoredLogger, set_color_mode
+from utils.logger import ColoredLogger, set_color_mode, color_enabled
 from utils.parser import BitrixParser
 
 
@@ -166,24 +166,37 @@ Examples:
 
 
 def print_banner(logger: ColoredLogger):
-    """Print tool banner"""
-    banner = """
+    """Print tool banner, with the 'TRIX' half of the logo in red-on-white
+    when the terminal supports color."""
+    if logger.level > logging.INFO:
+        return  # quiet mode: suppress the banner
 
+    # The 3 art rows spell CREEPYTRIX. Column 46 is a gap in every row, so it
+    # cleanly splits CREEPY (left) from TRIX (right); the right half is colored.
+    art = [
+        "    ▄█████ █████▄  ██████ ██████ █████▄ ██  ██ ██████ █████▄  ██ ██  ██",
+        "    ██     ██▄▄██▄ ██▄▄   ██▄▄   ██▄▄█▀  ▀██▀    ██   ██▄▄██▄ ██  ████",
+        "    ▀█████ ██   ██ ██▄▄▄▄ ██▄▄▄▄ ██       ██     ██   ██   ██ ██ ██  ██",
+    ]
+    TRIX_COL = 46
+    RED_ON_WHITE = '\033[31;47m'   # red foreground on a white background
+    RESET = '\033[0m'
 
-    ▄█████ █████▄  ██████ ██████ █████▄ ██  ██ ██████ █████▄  ██ ██  ██
-    ██     ██▄▄██▄ ██▄▄   ██▄▄   ██▄▄█▀  ▀██▀    ██   ██▄▄██▄ ██  ████
-    ▀█████ ██   ██ ██▄▄▄▄ ██▄▄▄▄ ██       ██     ██   ██   ██ ██ ██  ██
+    use_color = color_enabled()
+    # Pad the TRIX halves to one width so the white background is a clean block.
+    tail_w = max(len(r) - TRIX_COL for r in art)
+    logo = []
+    for r in art:
+        head, tail = r[:TRIX_COL], r[TRIX_COL:]
+        if use_color:
+            tail = RED_ON_WHITE + tail.ljust(tail_w) + RESET
+        logo.append(head + tail)
 
-
-    Bitrix Security Testing Tool v1.1 by KL3FT3Z (https://github.com/V3kt0r39)
-    Modules: Recon | Info Disclosure | Auth Bypass | SQLi | XSS | Upload | RCE | XXE/SSRF | 1C | Excel RCE | API
-    Based on: https://pentestnotes.ru/notes/bitrix_pentest_full/
-    """
-    # Print the ASCII banner directly, WITHOUT the logger's "[time] [LEVEL] "
-    # prefix -- that prefix attaches only to the first line and shoves the top
-    # row of the logo out of alignment with the rest. Still honor quiet mode.
-    if logger.level <= logging.INFO:
-        print(banner)
+    # Print directly (no logger prefix, which would misalign the first row).
+    print('\n\n' + '\n'.join(logo) + '\n\n')
+    print("    Bitrix Security Testing Tool v1.1 by KL3FT3Z (https://github.com/V3kt0r39)")
+    print("    Modules: Recon | Info Disclosure | Auth Bypass | SQLi | XSS | Upload | RCE | XXE/SSRF | 1C | Excel RCE | API")
+    print("    Based on: https://pentestnotes.ru/notes/bitrix_pentest_full/\n")
 
 
 def print_recon_results(result: ReconResult, logger: ColoredLogger):
