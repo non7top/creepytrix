@@ -118,14 +118,25 @@ def load_manual():
         return []
 
 
+# A well-formed Bitrix marketplace module code: vendor.module, lowercase.
+_VALID_CODE = re.compile(r'^[a-z0-9._]+$')
+
+
 def reduce_latest(rows):
     """Keep one row per module code. A withdrawn entry (no fixed version --
     vulnerable at any installed version) always supersedes a versioned one;
-    otherwise keep the highest fixed version."""
+    otherwise keep the highest fixed version.
+
+    Also a garbage guard: any row whose code isn't a clean module code
+    ([a-z0-9._]+) is dropped, so malformed codes from a polluted RSS <code>
+    (e.g. a URL query/fragment) never reach the registry regardless of source.
+    """
     by = {}
     for m in rows:
         c = m.get('code')
-        if not c:
+        if not c or not _VALID_CODE.match(c):
+            if c:
+                print(f"Dropping malformed module code: {c!r}", file=sys.stderr)
             continue
         cur = by.get(c)
         if cur is None:
@@ -218,7 +229,17 @@ def parse(xml_bytes: bytes):
     root = ET.fromstring(xml_bytes)
     mods = []
     for item in root.iter('item'):
-        code = (item.findtext('code') or '').strip()
+        raw_code = (item.findtext('code') or '').strip().lower()
+        src_link = (item.findtext('src_link') or '').strip()
+        # The RSS <code> can be polluted with a URL query string / fragment --
+        # observed: 'komtet.delivery?update_sys=Y#tab-about-link'. A real module
+        # code is only [a-z0-9._], so keep the leading valid run and drop the
+        # rest; fall back to the code embedded in src_link if <code> is unusable.
+        mc = re.match(r'[a-z0-9._]+', raw_code)
+        code = mc.group(0) if mc else ''
+        if not code:
+            ms = re.search(r'solutions/([a-z0-9._]+)/', src_link)
+            code = ms.group(1).lower() if ms else ''
         version_raw = (item.findtext('version') or '').strip()
         m = re.search(r'(\d+(?:\.\d+)+)', version_raw)  # first dotted version
         fixed = m.group(1) if m else None
@@ -230,7 +251,7 @@ def parse(xml_bytes: bytes):
             'fixed': fixed,
             'version_raw': version_raw,
             'published': (item.findtext('pubDate') or '').strip(),
-            'src_link': (item.findtext('src_link') or '').strip(),
+            'src_link': src_link,
             'fix_link': (item.findtext('fix_link') or '').strip(),
         })
     mods.sort(key=lambda x: x['code'])

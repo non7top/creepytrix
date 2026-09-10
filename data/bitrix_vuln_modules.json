@@ -1,7 +1,7 @@
 {
   "source": "https://www.1c-bitrix.ru/vul_dev/rss/",
-  "version": 2,
-  "generated": "2026-08-24",
+  "version": 3,
+  "generated": "2026-09-10",
   "note": "Auto-generated from the 1C-Bitrix vul_dev registry by scripts/update_vuln_registry.py, plus curated withdrawn/unpublished modules from bitrix_vuln_modules_manual.json. A module is vulnerable when its installed version is < \"fixed\", or unconditionally when \"withdrawn\": true (removed from the marketplace -- no fix; remove it).",
   "modules": [
     {
@@ -302,6 +302,15 @@
       "fix_link": "https://sp.intecweb.ru/kb/articles/371265-uyazvimost-saytov-k-virusam-obnovlenie-bezopasnosti-dlya-resheniy-universe/"
     },
     {
+      "code": "jcode.photocompare",
+      "name": "Фото До и После: сравнение изображений до/после",
+      "fixed": "1.0.2",
+      "version_raw": "до 1.0.2",
+      "published": "04.09.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/jcode.photocompare/",
+      "fix_link": "https://habr.com/ru/news/1079266/"
+    },
+    {
       "code": "kda.exportexcel",
       "name": "Экспорт в Excel. Выгрузка каталога товаров 1С-Битрикс. Создание прайс-листа",
       "fixed": "1.2.3",
@@ -318,6 +327,15 @@
       "published": "30.12.2025",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/kda.importexcel/",
       "fix_link": "https://esolutions.su/bezopastnost-saytov/dorabotki-bezopasnosti-moduley-importa/"
+    },
+    {
+      "code": "komtet.delivery",
+      "name": "КОМТЕТ Касса Курьер",
+      "fixed": "2.8.1",
+      "version_raw": "до 2.8.1",
+      "published": "26.08.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/komtet.delivery/?update_sys=Y#tab-about-link",
+      "fix_link": "https://kassa.komtet.ru/blog/obnovleniye-bezopasnosti-plagina-komtet-kassa-kuryer-v-is-bitriks"
     },
     {
       "code": "shs.parser",
