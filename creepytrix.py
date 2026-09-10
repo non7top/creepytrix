@@ -171,26 +171,32 @@ def print_banner(logger: ColoredLogger):
     if logger.level > logging.INFO:
         return  # quiet mode: suppress the banner
 
-    # The 3 art rows spell CREEPYTRIX. Column 46 is a gap in every row, so it
-    # cleanly splits CREEPY (left) from TRIX (right); the right half is colored.
+    # The 3 art rows spell CREEPYTRIX. Column 47 is the left edge of the 'T'
+    # (its top bar), so slicing there keeps the whole T while leaving the gap
+    # before it uncolored. The right half (TRIX) gets a red-on-white plaque.
     art = [
         "    ▄█████ █████▄  ██████ ██████ █████▄ ██  ██ ██████ █████▄  ██ ██  ██",
         "    ██     ██▄▄██▄ ██▄▄   ██▄▄   ██▄▄█▀  ▀██▀    ██   ██▄▄██▄ ██  ████",
         "    ▀█████ ██   ██ ██▄▄▄▄ ██▄▄▄▄ ██       ██     ██   ██   ██ ██ ██  ██",
     ]
-    TRIX_COL = 46
+    TRIX_COL = 47
     RED_ON_WHITE = '\033[31;47m'   # red foreground on a white background
     RESET = '\033[0m'
 
     use_color = color_enabled()
-    # Pad the TRIX halves to one width so the white background is a clean block.
-    tail_w = max(len(r) - TRIX_COL for r in art)
-    logo = []
-    for r in art:
-        head, tail = r[:TRIX_COL], r[TRIX_COL:]
-        if use_color:
-            tail = RED_ON_WHITE + tail.ljust(tail_w) + RESET
-        logo.append(head + tail)
+    if use_color:
+        # White plaque hugging TRIX: flush-left at the T (no whitened gap before
+        # it), padded by one white column on the right and one white row above
+        # and below.
+        width = max(len(r) - TRIX_COL for r in art) + 1
+        def plaque(s):
+            return RED_ON_WHITE + s.ljust(width) + RESET
+        border = ' ' * TRIX_COL + plaque('')            # blank white row
+        logo = [border]
+        logo += [r[:TRIX_COL] + plaque(r[TRIX_COL:]) for r in art]
+        logo.append(border)
+    else:
+        logo = list(art)
 
     # Print directly (no logger prefix, which would misalign the first row).
     print('\n\n' + '\n'.join(logo) + '\n\n')
