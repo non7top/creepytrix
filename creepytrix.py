@@ -179,7 +179,11 @@ def print_banner(logger: ColoredLogger):
     Modules: Recon | Info Disclosure | Auth Bypass | SQLi | XSS | Upload | RCE | XXE/SSRF | 1C | Excel RCE | API
     Based on: https://pentestnotes.ru/notes/bitrix_pentest_full/
     """
-    logger.info(banner)
+    # Print the ASCII banner directly, WITHOUT the logger's "[time] [LEVEL] "
+    # prefix -- that prefix attaches only to the first line and shoves the top
+    # row of the logo out of alignment with the rest. Still honor quiet mode.
+    if logger.level <= logging.INFO:
+        print(banner)
 
 
 def print_recon_results(result: ReconResult, logger: ColoredLogger):
