@@ -168,8 +168,11 @@ if (strpos($REGISTRY_B64, '__CREEPYTRIX') !== 0) {
     $decoded = base64_decode($REGISTRY_B64, true);
     if ($decoded !== false) $registry = json_decode($decoded, true);
 }
-if (!is_array($registry) || !isset($registry['modules'])) {
-    $result['error'] = 'embedded vuln registry not populated';
+// Fail closed: an unfilled slot, a decode failure, OR an empty ruleset must
+// refuse -- a vuln scanner that reports a clean bill because its rules never
+// loaded is the one wrong answer that matters.
+if (!is_array($registry) || empty($registry['modules'])) {
+    $result['error'] = 'embedded vuln registry not populated or empty';
     ct_emit($result);
 }
 $result['registry_version'] = isset($registry['version']) ? $registry['version'] : null;
