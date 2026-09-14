@@ -28,13 +28,13 @@ colorama>=0.4.6; platform_system == "Windows"
 jsonschema>=4.26.0
 
 # Regex
-regex>=2026.9.3
+regex>=2026.9.10
 
 # URL Parsing
 yarl>=1.24.5
 
 # Progress Bars (optional)
-tqdm>=4.70.0
+tqdm>=4.70.1
 
 # CLI Arguments
 argparse>=1.4.0
