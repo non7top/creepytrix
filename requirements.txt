@@ -4,13 +4,13 @@
 
 # HTTP Requests
 requests>=2.34.2
-urllib3>=2.7.0
+urllib3>=2.8.0
 
 # Data Processing
 dataclasses>=0.6; python_version < "3.7"
 
 # JWT Handling (for API Scanner)
-PyJWT>=2.13.0
+PyJWT>=2.14.0
 cryptography>=50.0.1
 
 # XML Processing (for XXE/SSRF and 1C modules)
@@ -31,7 +31,7 @@ jsonschema>=4.26.0
 regex>=2026.9.10
 
 # URL Parsing
-yarl>=1.24.5
+yarl>=1.25.1
 
 # Progress Bars (optional)
 tqdm>=4.70.1
@@ -47,7 +47,7 @@ python-dateutil>=2.9.0.post0
 
 # String Matching
 fuzzywuzzy>=0.18.0
-python-Levenshtein>=0.27.4
+python-Levenshtein>=0.27.5
 
 # Encoding Detection
 chardet>=7.6.0
