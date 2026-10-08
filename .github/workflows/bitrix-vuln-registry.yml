@@ -27,6 +27,9 @@ jobs:
         id: sync
         run: python3 scripts/update_vuln_registry.py
 
+      - name: Render creepytrix_probe.php with the fresh registry
+        run: python3 scripts/render_probe.py
+
       - name: Open PR if the registry changed
         id: cpr
         uses: peter-evans/create-pull-request@v8
@@ -47,6 +50,10 @@ jobs:
             - `data/vul_dev_rss.xml` (raw snapshot for comparison)
             - `data/bitrix_vuln_modules.json` (parsed module -> fixed version;
               also merges the curated `data/bitrix_vuln_modules_manual.json`)
+            - `tools/creepytrix_probe.generated.php` (the dispatch-ready probe,
+              re-rendered from `tools/creepytrix_probe.php` with this registry
+              embedded; `__CREEPYTRIX_TOKEN__` is left for wr-util to fill in
+              at dispatch time -- never baked in here)
 
             New or changed rows mean new vulnerable marketplace modules to detect
             in local mode. If empty, no changes were found this week.
@@ -60,6 +67,7 @@ jobs:
           add-paths: |
             data/vul_dev_rss.xml
             data/bitrix_vuln_modules.json
+            tools/creepytrix_probe.generated.php
           delete-branch: true
 
       # A no-module-change run is just a version/freshness bump -- nothing to
