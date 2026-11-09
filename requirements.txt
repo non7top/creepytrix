@@ -43,7 +43,7 @@ argparse>=1.4.0
 typing-extensions>=4.3.0; python_version < "3.8"
 
 # Date/Time Handling
-python-dateutil>=3.0.0
+python-dateutil>=4.0.0
 
 # String Matching
 fuzzywuzzy>=0.18.0
@@ -53,7 +53,7 @@ python-Levenshtein>=0.27.5
 chardet>=7.7.0
 
 # SSL/TLS
-certifi>=2026.10.19
+certifi>=2026.10.23
 pyOpenSSL>=26.4.0
 
 # Development Dependencies (optional)
