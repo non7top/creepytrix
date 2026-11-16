@@ -7,6 +7,8 @@ import os
 import sys
 import tempfile
 import unittest
+import urllib.error
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 import update_vuln_registry as upd  # noqa: E402
@@ -46,6 +48,11 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(mods), 1)
         self.assertEqual(mods[0]['code'], 'komtet.delivery')  # query/fragment stripped
         self.assertEqual(mods[0]['fixed'], '2.8.1')
+
+    def test_empty_and_malformed_xml_returns_empty(self):
+        self.assertEqual(upd.parse(b''), [])
+        self.assertEqual(upd.parse(None), [])
+        self.assertEqual(upd.parse(b'<not-xml>'), [])
 
 
 class TestModuleCheck(unittest.TestCase):
@@ -163,6 +170,31 @@ class TestReduceLatest(unittest.TestCase):
         ]
         out = upd.reduce_latest(rows)
         self.assertEqual([m['code'] for m in out], ['ok.mod'])
+
+
+class TestMainFallback(unittest.TestCase):
+    @patch('update_vuln_registry.write_registry')
+    @patch('update_vuln_registry.collect_pages')
+    @patch('update_vuln_registry.fetch')
+    def test_main_falls_back_when_rss_404(self, mock_fetch, mock_collect, mock_write):
+        mock_fetch.side_effect = urllib.error.HTTPError(
+            'https://www.1c-bitrix.ru/vul_dev/rss/', 404, 'Not Found', {}, None)
+        mock_collect.return_value = ([{'code': 'page.mod', 'fixed': '1.0.0'}], [])
+        rc = upd.main(['update_vuln_registry.py'])
+        self.assertEqual(rc, 0)
+        self.assertTrue(mock_write.called)
+        written_mods = mock_write.call_args[0][0]
+        self.assertTrue(any(m['code'] == 'page.mod' for m in written_mods))
+
+    @patch('update_vuln_registry.collect_pages')
+    @patch('update_vuln_registry.fetch')
+    def test_main_aborts_when_both_rss_and_pages_fail(self, mock_fetch, mock_collect):
+        mock_fetch.side_effect = urllib.error.HTTPError(
+            'https://www.1c-bitrix.ru/vul_dev/rss/', 404, 'Not Found', {}, None)
+        mock_collect.side_effect = RuntimeError('Network down')
+        with patch('update_vuln_registry.RSS_SNAPSHOT', '/nonexistent/path/rss.xml'):
+            rc = upd.main(['update_vuln_registry.py'])
+        self.assertEqual(rc, 1)
 
 
 if __name__ == '__main__':
