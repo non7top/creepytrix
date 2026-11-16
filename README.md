@@ -1,11 +1,11 @@
 # 🔒 CREEPYTRIX - Bitrix Pentest Tool v1.1
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/toxy4ny/creepytrix)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/non7top/creepytrix)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
 > **Comprehensive framework for testing the security of Bitrix CMS**
-> 
+>
 > Based on research from [pentestnotes.ru](https://pentestnotes.ru/notes/bitrix_pentest_full/)
 
 ![Bitrix Pentest Tool](https://img.shields.io/badge/Bitrix-Pentest-red)
@@ -16,6 +16,9 @@
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Local On-Host Auditing](#local-on-host-auditing)
+- [Docker & Disposable Containers](#docker--disposable-containers)
+- [Vulnerability Registry & Probe](#vulnerability-registry--on-host-probe)
 - [Modules](#modules)
 - [Examples](#examples)
 - [Project Structure](#project-structure)
@@ -24,17 +27,17 @@
 
 ## 🎯 Description
 
-**Bitrix Pentest Tool** — is a powerful framework for comprehensive security testing of sites based on **1C-Bitrix CMS**. The tool is developed based on research of Bitrix vulnerabilities and includes 11 specialized modules for identifying critical vulnerabilities.
+**Bitrix Pentest Tool** - a powerful framework for comprehensive security testing of sites based on **1C-Bitrix CMS**. The tool is developed based on research of Bitrix vulnerabilities and includes specialized modules for identifying critical vulnerabilities via remote tests and on-host local inspections.
 
 ### Main Goals:
 - Identify vulnerabilities before attackers do
 - Automate routine security checks
-- Comprehensive analysis of all Bitrix components
+- Comprehensive analysis of all Bitrix components and marketplace modules
 - Generate detailed reports in JSON format
 
 ## ✨ Features
 
-### 🔍 11 Security Modules
+### 🔍 Security Modules
 
 | Module | Description | Vulnerabilities |
 |--------|-------------|-----------------|
@@ -44,7 +47,7 @@
 | **sqli** | SQL Injection | Error-based, Union, Boolean, Time-based |
 | **xss** | Cross-Site Scripting | Reflected, Stored, DOM-based, Blind |
 | **upload** | File Upload | Arbitrary upload, bypass, traversal |
-| **rce** | Remote Code Execution | Command injection, eval, deserialization |
+| **rce** | Remote Code Execution | Command injection, eval, deserialization, per-CVE plugins |
 | **xxe_ssrf** | XXE/SSRF | XML External Entity, Server-Side Request Forgery |
 | **1c** | 1C Integration | 1C Exchange, enterprise data leakage |
 | **excel** | Excel RCE | Formula injection, DDE, CSV injection, Power Query |
@@ -52,12 +55,17 @@
 
 ### 🚀 Key Features
 
-- **Aggressive Mode** — destructive testing with real payloads
-- **OOB (Out-of-Band)** — testing with external callback server
-- **Multi-threading** — fast scanning of large targets
-- **JSON Reports** — structured results for automation
-- **Proxy Support** — integration with Burp Suite, OWASP ZAP
-- **Colored Output** — convenient terminal result reading
+- **Local Mode** - on-host inspection for exact Bitrix core versions, third-party module versions, file permissions, and database backdoors
+- **Vulnerability Registry** - automated weekly sync tracking 40+ vulnerable Bitrix marketplace modules from official advisories
+- **Modular CVE Registry** - extensible per-CVE check plugins (CVE-2022-27228, CVE-2023-1719, BDU:2026-05967, etc.)
+- **Disposable Containers** - turnkey Docker Compose and Makefile setup for non-root execution
+- **Standalone PHP Probe** - self-contained single-file read-only probe for host or dispatch-driven audits
+- **Aggressive Mode** - destructive testing with real payloads
+- **OOB (Out-of-Band)** - testing with external callback server
+- **Multi-threading** - fast scanning of large targets
+- **JSON Reports** - structured results for automation
+- **Proxy Support** - integration with Burp Suite, OWASP ZAP
+- **Colored Output** - native terminal color output with `--color` controls
 
 ## 📦 Installation
 
@@ -71,7 +79,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/V3kt0r39/creepytrix.git
+git clone https://github.com/non7top/creepytrix.git
 cd creepytrix
 
 # Install dependencies
@@ -125,12 +133,64 @@ python creepytrix.py https://example.com -m xxe_ssrf -a --oob-server http://your
 # With callback for Excel RCE
 python creepytrix.py https://example.com -m excel -a --callback-server http://your-server.com
 
+# Control color output (auto, always, never)
+python creepytrix.py https://example.com --color always
+
 # Quiet mode (only errors and critical findings)
 python creepytrix.py https://example.com -q
 
 # Verbose output
 python creepytrix.py https://example.com -v
 ```
+
+### Local On-Host Auditing
+
+Inspect a Bitrix installation directly on the server without sending remote HTTP probes:
+
+```bash
+# Auto-detect Bitrix docroot (/home/bitrix/www, /var/www/html, etc.)
+python creepytrix.py --local
+
+# Specify explicit Bitrix web root
+python creepytrix.py --local --web-root /home/bitrix/www
+
+# Include database scan for injected eval()/webshell code in b_option
+python creepytrix.py --local --db-scan
+```
+
+Local mode performs:
+- Bitrix version and edition detection from `modules/main/classes/general/version.php`
+- Installed third-party marketplace module inventory compared against `data/bitrix_vuln_modules.json`
+- Flagging of withdrawn/unpublished modules that must be uninstalled
+- Authoritative on-host CVE plugin checks (`local_check`)
+- File permissions and configuration audits
+- Database scans for persisted PHP webshells
+
+### Docker & Disposable Containers
+
+Run tooling inside disposable, non-root containers without installing host packages:
+
+```bash
+# Build image
+make build
+
+# Run scanner against target
+make run ARGS="https://example.com -m rce"
+
+# Run local scan on host directory (mounted read-only at /target)
+make local ROOT=/home/bitrix/www
+
+# Run test suite
+make test
+
+# Run linter
+make lint
+```
+
+### Vulnerability Registry & On-Host Probe
+
+- **Data-driven registry** (`data/bitrix_vuln_modules.json`): tracks 40+ vulnerable 1C-Bitrix marketplace modules, fixed versions, and withdrawn modules from official security advisories (`https://www.1c-bitrix.ru/vul_dev/`), updated automatically via weekly GitHub workflow.
+- **Standalone PHP probe** (`tools/creepytrix_probe.generated.php`): self-contained, single-file on-host probe embedding the vulnerability registry. Useful for automated audits via dispatchers; removes itself immediately upon execution.
 
 ## 🧩 Modules
 
@@ -246,7 +306,7 @@ python creepytrix.py https://example.com -m api -a
 
 ```bash
 $ python creepytrix.py https://target.com -q
-      
+
     Bitrix Security Testing Tool v1.1
     Modules: Recon | Info Disclosure | Auth Bypass | SQLi | XSS | Upload | RCE | XXE/SSRF | 1C | Excel RCE | API
     Based on: https://pentestnotes.ru/notes/bitrix_pentest_full/
@@ -332,7 +392,12 @@ $ cat report.json | jq '.modules.api_scanner.summary'
 
 ```
 creepytrix/
-├── modules/                    # Scanning modules
+├── data/                       # Vulnerability registry data & snapshots
+│   ├── bitrix_vuln_modules.json
+│   ├── bitrix_vuln_modules_manual.json
+│   └── vul_dev_rss.xml
+├── modules/                    # Scanning modules & CVE plugins
+│   ├── cves/                   # Modular per-CVE checks (CVE-2022-27228, BDU:2026-05967, etc.)
 │   ├── __init__.py
 │   ├── recon.py               # Reconnaissance
 │   ├── info_disclosure.py     # Information Disclosure
@@ -344,14 +409,32 @@ creepytrix/
 │   ├── xxe_ssrf.py            # XXE/SSRF
 │   ├── integration_1c.py      # 1C Integration
 │   ├── excel_rce.py           # Excel RCE
-│   └── api_scanner.py         # API Scanner
+│   ├── api_scanner.py         # API Scanner
+│   └── local_scan.py          # On-host local inspection
+├── scripts/                    # Maintenance & sync scripts
+│   ├── update_vuln_registry.py
+│   └── render_probe.py
+├── tests/                      # Test suite
+│   ├── test_cve_plugins.py
+│   ├── test_html_editor.py
+│   ├── test_local_scan.py
+│   └── test_vuln_registry.py
+├── tools/                      # Standalone tools & probe
+│   ├── creepytrix_probe.php
+│   └── creepytrix_probe.generated.php
 ├── utils/                      # Utilities
 │   ├── __init__.py
+│   ├── http_heuristics.py
+│   ├── localhost.py
 │   ├── requester.py           # HTTP Requests
 │   ├── logger.py              # Logging
 │   └── parser.py              # Response Parsing
 ├── creepytrix.py              # Main Script
+├── Dockerfile                  # Container definition
+├── docker-compose.yml          # Docker Compose service definition
+├── Makefile                    # Disposable container entry points
 ├── requirements.txt           # Dependencies
+├── requirements-dev.txt       # Development & test dependencies
 ├── README.md                  # Documentation
 └── LICENSE                    # License
 ```
@@ -372,7 +455,7 @@ creepytrix/
 1. **Test on staging/dev** environment before production
 2. **Use proxy** (`--proxy`) to monitor requests
 3. **Start with safe modules** (recon, disclosure) before aggressive ones
-4. **Check scope** — don't go beyond permitted targets
+4. **Check scope** - don't go beyond permitted targets
 
 ## 🤝 Contributing
 
@@ -388,11 +471,11 @@ We welcome contributions to the project!
 
 ### Report a Bug
 
-Use [GitHub Issues](https://github.com/toxy4ny/creepytrix/issues) with the `bug` label
+Use [GitHub Issues](https://github.com/non7top/creepytrix/issues) with the `bug` label
 
 ### Request a Feature
 
-Use [GitHub Issues](https://github.com/toxy4ny/creepytrix/issues) with the `enhancement` label
+Use [GitHub Issues](https://github.com/non7top/creepytrix/issues) with the `enhancement` label
 
 ## 📚 Useful Resources
 
