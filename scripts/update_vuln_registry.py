@@ -217,8 +217,8 @@ def report_unmatched(unmatched, manual_mods):
             with open(summary, 'a', encoding='utf-8') as f:
                 f.write('### ⚠️ Unmatched vul_dev rows\n\n')
                 for g in gaps:
-                    f.write(f"- **{g['name']}** ({g.get('status','')}) — "
-                            f"code: `{g.get('code') or 'unknown — add slug'}`\n")
+                    f.write(f"- **{g['name']}** ({g.get('status','')}) - "
+                            f"code: `{g.get('code') or 'unknown - add slug'}`\n")
                 f.write('\nAdd each to `data/bitrix_vuln_modules_manual.json`.\n')
         except OSError:
             pass
@@ -226,7 +226,13 @@ def report_unmatched(unmatched, manual_mods):
 
 
 def parse(xml_bytes: bytes):
-    root = ET.fromstring(xml_bytes)
+    if not xml_bytes:
+        return []
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError as e:
+        print(f"Warning: could not parse RSS XML: {e}", file=sys.stderr)
+        return []
     mods = []
     for item in root.iter('item'):
         raw_code = (item.findtext('code') or '').strip().lower()
@@ -339,10 +345,25 @@ def main(argv):
         return 0
 
     if len(argv) > 1 and os.path.isfile(argv[1]):
-        xml_bytes = open(argv[1], 'rb').read()
+        with open(argv[1], 'rb') as f:
+            xml_bytes = f.read()
+        fresh_xml = False
         page_rows, unmatched = [], []
     else:
-        xml_bytes = fetch(RSS_URL)
+        fresh_xml = False
+        try:
+            xml_bytes = fetch(RSS_URL)
+            fresh_xml = True
+        except Exception as e:
+            print(f"Warning: could not fetch RSS feed ({RSS_URL}): {e}", file=sys.stderr)
+            if os.path.isfile(RSS_SNAPSHOT):
+                try:
+                    with open(RSS_SNAPSHOT, 'rb') as f:
+                        xml_bytes = f.read()
+                except OSError:
+                    xml_bytes = None
+            else:
+                xml_bytes = None
         try:
             page_rows, unmatched = collect_pages()
         except Exception as e:
@@ -355,7 +376,10 @@ def main(argv):
     report_unmatched(unmatched, manual_mods)
 
     existing = load_existing_payload()
-    rss_mods = parse(xml_bytes)
+    rss_mods = parse(xml_bytes) if xml_bytes else []
+    if not rss_mods and not page_rows:
+        print("Error: could not fetch module data from RSS or HTML grid", file=sys.stderr)
+        return 1
     mods = reduce_latest(rss_mods + page_rows + manual_mods)
     changed = modules_changed(existing.get('modules', []), mods)
     version = next_version(existing)
@@ -363,11 +387,12 @@ def main(argv):
     # Normalize the snapshot (LF endings, no trailing whitespace) so the
     # committed baseline and CI-written file compare cleanly -- avoids spurious
     # weekly diffs from server-side CRLF/trailing spaces.
-    text = xml_bytes.decode('utf-8', 'replace')
-    normalized = '\n'.join(line.rstrip() for line in text.splitlines()) + '\n'
-    os.makedirs(os.path.dirname(RSS_SNAPSHOT), exist_ok=True)
-    with open(RSS_SNAPSHOT, 'w', encoding='utf-8', newline='\n') as f:
-        f.write(normalized)
+    if fresh_xml and xml_bytes:
+        text = xml_bytes.decode('utf-8', 'replace')
+        normalized = '\n'.join(line.rstrip() for line in text.splitlines()) + '\n'
+        os.makedirs(os.path.dirname(RSS_SNAPSHOT), exist_ok=True)
+        with open(RSS_SNAPSHOT, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(normalized)
     write_registry(mods, version, _today_utc())
 
     # Tell the workflow whether real module rules changed. False => it's just a
