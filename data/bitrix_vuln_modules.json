@@ -1,7 +1,7 @@
 {
   "source": "https://www.1c-bitrix.ru/vul_dev/rss/",
-  "version": 9,
-  "generated": "2026-10-19",
+  "version": 10,
+  "generated": "2026-11-23",
   "note": "Auto-generated from the 1C-Bitrix vul_dev registry by scripts/update_vuln_registry.py, plus curated withdrawn/unpublished modules from bitrix_vuln_modules_manual.json. A module is vulnerable when its installed version is < \"fixed\", or unconditionally when \"withdrawn\": true (removed from the marketplace -- no fix; remove it).",
   "modules": [
     {
@@ -300,6 +300,15 @@
       "published": "30.04.2026",
       "src_link": "https://marketplace.1c-bitrix.ru/solutions/intec.core/",
       "fix_link": "https://sp.intecweb.ru/kb/articles/371265-uyazvimost-saytov-k-virusam-obnovlenie-bezopasnosti-dlya-resheniy-universe/"
+    },
+    {
+      "code": "ispring.sdosync",
+      "name": "Магазин подарков ISpring",
+      "fixed": "0.7.0",
+      "version_raw": "до 0.7.0",
+      "published": "10.11.2026",
+      "src_link": "https://marketplace.1c-bitrix.ru/solutions/ispring.sdosync/",
+      "fix_link": "https://habr.com/ru/articles/1106944/"
     },
     {
       "code": "jcode.photocompare",
